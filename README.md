@@ -212,12 +212,28 @@ accommodate JPL NAIF codes, for which 16-bit storage is insufficient.
 <a name="installation"></a>
 ## Building and installation
 
+ - [Dependencies](#dependencies)
  - [Build SuperNOVAS using GNU make](#gnu-build)
  - [Build SuperNOVAS using CMake](#cmake-build)
  - [Install SuperNOVAS via `vcpkg`](#vcpkg-port)
  - [Linux packages](#linux-packages)
  - [Homebrew package](#homebrew)
  - [Nix package](#nix)
+
+
+<a name="dependencies"></a>
+### Dependencies
+
+Required build dependencies:
+
+ - `libcurl`
+ 
+Oprional build dependencies:
+
+ - `calceph` -- if building with CALCEPH support enabled.
+ - `cspice` -- if building with CSPICE support enabled.
+ - `doxygen` -- if compiling HTML documentation.
+ 
 
 <a name="gnu-build"></a>
 ### Build SuperNOVAS using GNU make

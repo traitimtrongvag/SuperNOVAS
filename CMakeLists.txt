@@ -36,6 +36,7 @@ include(FeatureSummary)
 
 # Build options
 option(BUILD_SHARED_LIBS "Build as shared libraries instead of static" OFF)
+option(BUILD_TOOLS "Build command-line tools" ON)
 option(BUILD_DOC "Build HTML documetation" OFF)
 option(BUILD_TESTING "Build regression test suite" ON)
 option(BUILD_EXAMPLES "Build example programs" OFF)
@@ -47,6 +48,7 @@ option(ENABLE_CSPICE "Enable CSPICE support (solsys-cspice plugin)" OFF)
 
 # Set feature descriptions for summary
 add_feature_info(SharedLibs BUILD_SHARED_LIBS "Build as shared libraries")
+add_feature_info(SharedLibs BUILD_TOOLS "Build command-line tools")
 add_feature_info(Documentation BUILD_DOC "Developer documentation (HTML)")
 add_feature_info(Testing BUILD_TESTING "Run regression testing")
 add_feature_info(Examples BUILD_EXAMPLES "Build and test example programs")

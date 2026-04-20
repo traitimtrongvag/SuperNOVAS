@@ -2110,6 +2110,22 @@ enum novas_reference_ellipsoid {
  */
 #define NOVAS_REFERENCE_ELLIPSOIDS (NOVAS_IERS_2003_ELLIPSOID + 1)
 
+/**
+ * Earth Orienation Parameters (EOP), such as obtained from IERS.
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ */
+typedef struct {
+  double jd;          ///< [day] Julian day (in any time measure)
+  int leap;           ///< [s] Leap seconds, that is the TAI - UTC time difference.
+  double dut1;        ///< [s] UT1 - UTC time difference
+  double xp;          ///< [arcsec] Polar offset in ITRF _x_ direction.
+  double yp;          ///< [arcsec] Polar offset in ITRF _y_ direction.
+} novas_eop;
+
+
+
 /// \cond _PRIVATE
 #ifndef _NUTATION_
 #define _NUTATION_
@@ -3431,6 +3447,11 @@ int novas_equals_planet_bundle(const novas_planet_bundle *a, const novas_planet_
 
 /// @c_frame
 int novas_equals_frame(const novas_frame *a, const novas_frame *b);
+
+// in iers.c
+/// @c_earth
+int novas_fetch_eop(double jd, novas_eop *eop);
+
 
 // <================= END of SuperNOVAS API =====================>
 

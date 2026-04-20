@@ -51,11 +51,10 @@ solsys: $(SOLSYS_TARGETS)
 .PHONY: all
 all: distro static analyze
 
-
 # Remove intermediates
 .PHONY: clean
 clean:
-	@rm -f $(OBJECTS) Doxyfile.local gmon.out
+	@rm -f $(OBJECTS)
 
 # Remove all generated files
 .PHONY: distclean

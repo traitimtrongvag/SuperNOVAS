@@ -8,6 +8,7 @@
 
 include config.mk
 
+
 # ===============================================================================
 # Specific build targets and recipes below...
 # ===============================================================================
@@ -48,7 +49,7 @@ analyze:
 
 # All of the above
 .PHONY: all
-all: distro static test coverage analyze
+all: distro static tools test coverage analyze
 
 # Run regression tests
 .PHONY: test
@@ -62,6 +63,10 @@ benchmark: shared-c99
 .PHONY: examples
 examples: shared
 	$(MAKE) -C examples
+
+.PHONY: tools
+tools: $(LIB_TARGET)
+	$(MAKE) -C src/tools
 
 # Perform checks (test + analyze)
 .PHONY: check
@@ -88,7 +93,8 @@ distclean: clean
 	@rm -f $(LIB)/libsupernovas.$(SOEXT)* $(LIB)/libsupernovas.a $(LIB)/libnovas.a \
       $(LIB)/libnovas.$(SOEXT)* $(LIB)/libsolsys*.$(SOEXT)*
 	@rm -f doc/Doxyfile.local doc/README.md
-	@rm -rf build */build 
+	@rm -rf build */build
+	@rm -rf bin
 	@$(MAKE) -s -C src distclean
 	@$(MAKE) -s -C test distclean
 	@$(MAKE) -s -C benchmark distclean
@@ -99,6 +105,7 @@ distclean: clean
 .PHONY: dox local-dox
 dox local-dox:
 	$(MAKE) -C doc
+
 
 
 # ----------------------------------------------------------------------------
