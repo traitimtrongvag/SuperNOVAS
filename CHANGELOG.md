@@ -21,6 +21,8 @@ Upcoming maintenance release, possibly around 1 August 2026.
  
  - CMake export build-dir targets for dependent builds.
  
+ - Tweak portable mutex macros in ephemeris plugins.
+ 
 
 ## [1.6.0] - 2026-04-27
 
