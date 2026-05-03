@@ -3,6 +3,9 @@
  *
  * @date Created  on Apr 18, 2026
  * @author Attila Kovacs
+ *
+ *  Functions to obtain and manage Earth Orientation data from the International Earth Rotation
+ *  and Reference Systems Service (IERS) via HTTPS.
  */
 
 #include <string.h>
@@ -377,11 +380,11 @@ static int novas_eop_spline_interp(double jd, const novas_eop *restrict array, n
 }
 
 /**
- * Obtains interpolated Earth Orientation Parameter data from IERS. For dates within the past
- * month or prediction for the next year, the rapid service data is used (`finals.all`), otherwise
- * for dates after 1962 the C04 series is used, or for dates all the way back to 1846, the C01
- * series is used. All of the mentioned data are retrieved relative to the IAU2000
- * precession-nutation model.
+ * Obtains interpolated Earth Orientation Parameter data from the International Earth Rotation and
+ * Reference Systems Service (IERS). For dates since 1972 or for prediction for up to a year ahead,
+ * the rapid service data is used (`finals.all`), otherwise for dates after 1962 the C04 series is
+ * used, and for dates all the way back to 1846, the C01 series is used. All of the mentioned data
+ * are retrieved relative to the IAU2000 precession-nutation model.
  *
  * NOTES:
  *
@@ -414,6 +417,7 @@ static int novas_eop_spline_interp(double jd, const novas_eop *restrict array, n
  * @since 1.7
  * @author Attila Kovacs
  *
+ * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
  * @sa novas_make_frame(), novas_set_time(), @ref earth
  */
 int novas_fetch_eop(double jd, novas_eop *eop) {

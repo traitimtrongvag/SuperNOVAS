@@ -1362,6 +1362,18 @@ public:
 
   std::string to_string() const;
 
+  static EOP fetch_for_jd(double jd);
+
+  static EOP fetch_for_mjd(double mjd);
+
+  static EOP fetch_for(const time_t time);
+
+  static EOP fetch_for(const CalendarDate& date);
+
+  static EOP fetch_current(double offset = 0.0);
+
+  static EOP fetch_current(const Interval& offset);
+
   static const EOP& undefined();
 };
 

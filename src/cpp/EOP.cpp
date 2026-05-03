@@ -11,6 +11,10 @@
 
 #include "supernovas.h"
 
+/// \cond PRIVATE
+#define EOP_LEAP_FETCH              (-999999)
+#define UNIX_SECONDS_0UTC_1JAN2000  946684800L    ///< [s] UNIX time at J2000.0
+/// \endcond
 
 
 namespace supernovas {
@@ -18,7 +22,9 @@ namespace supernovas {
 void EOP::validate() {
   static const char *fn = "EOP()";
 
-  if(!isfinite(_dut1))
+  if(_leap == EOP_LEAP_FETCH)
+    _valid = false;
+  else if(!isfinite(_dut1))
     novas_set_errno(EINVAL, fn, "input dUT1 is NAN or infinite");
   else if(!_xp.is_valid())
     novas_set_errno(EINVAL, fn, "input xp is NAN");
@@ -189,6 +195,174 @@ std::string EOP::to_string() const {
 }
 
 /**
+ * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
+ * Systems Service (IERS).
+ *
+ * NOTES:
+ *
+ * - The IERS service may be offline, slow to respond, and the format of the data served may
+ *   change. Therefore, you should avoid using this method in critical applications or when
+ *   responsiveness is important. In such cases you are likely better off obtaining EOP from
+ *   data stored locally, such as on the file-system or in a local database.
+ *
+ *
+ * @param jd      [day] Julian Date (preferably UTC-based).
+ * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
+ *                indicate the type of error).
+ *
+ * @since 1.7
+ *
+ * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
+ * @sa fetch_for_mjd(), fetch_for(), fetch_current(), novas_fetch_eop()
+ */
+EOP EOP::fetch_for_jd(double jd) {
+  static const char *fn = "EOP::fetch_for_jd()";
+
+  novas_eop eop = {};
+  if(novas_fetch_eop(jd, &eop) != 0) {
+    novas_trace_invalid(fn);
+    return EOP::undefined();
+  }
+
+  EOP e = EOP(eop.leap, eop.dut1, eop.xp * Unit::arcsec, eop.yp * Unit::arcsec);
+  if(!e.is_valid())
+    novas_trace_invalid(fn);
+
+  return e;
+}
+
+/**
+ * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
+ * Systems Service (IERS).
+ *
+ * NOTES:
+ *
+ * - The IERS service may be offline, slow to respond, and the format of the data served may
+ *   change. Therefore, you should avoid using this method in critical applications or when
+ *   responsiveness is important. In such cases you are likely better off obtaining EOP from
+ *   data stored locally, such as on the file-system or in a local database.
+ *
+ * @param mjd     [day] Modified Julian Date (preferably UTC-based).
+ * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
+ *                indicate the type of error).
+ *
+ * @since 1.7
+ *
+ * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
+ * @sa fetch_for_jd(), fetch_for(), fetch_current(), novas_fetch_eop()
+ */
+EOP EOP::fetch_for_mjd(double mjd) {
+  EOP e = fetch_for_jd(NOVAS_JD_MJD0 + mjd);
+  if(!e.is_valid())
+    novas_trace_invalid("EOP::fetch_for_mjd()");
+  return e;
+}
+
+/**
+ * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
+ * Systems Service (IERS).
+ *
+ * NOTES:
+ *
+ * - The IERS service may be offline, slow to respond, and the format of the data served may
+ *   change. Therefore, you should avoid using this method in critical applications or when
+ *   responsiveness is important. In such cases you are likely better off obtaining EOP from
+ *   data stored locally, such as on the file-system or in a local database.
+ *
+ * @param time    UNIX time for which to try get EOP.
+ * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
+ *                indicate the type of error).
+ *
+ * @since 1.7
+ *
+ * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
+ * @sa fetch_for_jd(), fetch_for_mjd(), fetch_current(), novas_fetch_eop()
+ */
+EOP EOP::fetch_for(const time_t time) {
+  EOP e = fetch_for_jd(NOVAS_JD_J2000 + (time - UNIX_SECONDS_0UTC_1JAN2000) / 86400.0);
+  if(!e.is_valid())
+    novas_trace_invalid("EOP::fetch_for()");
+  return e;
+}
+
+/**
+ * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
+ * Systems Service (IERS).
+ *
+ * NOTES:
+ *
+ * - The IERS service may be offline, slow to respond, and the format of the data served may
+ *   change. Therefore, you should avoid using this method in critical applications or when
+ *   responsiveness is important. In such cases you are likely better off obtaining EOP from
+ *   data stored locally, such as on the file-system or in a local database.
+ *
+ * @param date    Calendar date for which to try get EOP.
+ * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
+ *                indicate the type of error).
+ *
+ * @since 1.7
+ *
+ * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
+ * @sa fetch_for_jd(), fetch_for_mjd(), fetch_current(), novas_fetch_eop()
+ */
+EOP EOP::fetch_for(const CalendarDate& date) {
+  struct tm tm = {};
+  date.break_down(&tm);
+  return fetch_for(mktime(&tm));
+}
+
+/**
+ * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
+ * Systems Service (IERS) for the current time instant, or an offset time from the current time.
+ *
+ * NOTES:
+ *
+ * - The IERS service may be offline, slow to respond, and the format of the data served may
+ *   change. Therefore, you should avoid using this method in critical applications or when
+ *   responsiveness is important. In such cases you are likely better off obtaining EOP from
+ *   data stored locally, such as on the file-system or in a local database.
+ *
+ * @param offset  [s] (optional) time offset from current time (default: 0.0).
+ * @return        Current EOP obtained from IERS or else an invalid EOP if there was an error
+ *                (errno will indicate the type of error).
+ *
+ * @since 1.7
+ *
+ * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
+ * @sa fetch_for(), fetch_for_jd(), fetch_for_mjd(), novas_fetch_eop()
+ */
+EOP EOP::fetch_current(double offset) {
+  EOP eop = fetch_for(time(NULL) + (time_t) std::round(offset));
+  if(!eop.is_valid())
+    novas_trace_invalid("EOP::fetch_current()");
+  return eop;
+}
+
+/**
+ * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
+ * Systems Service (IERS) for the current time instant, or an offset time from the current time.
+ *
+ * NOTES:
+ *
+ * - The IERS service may be offline, slow to respond, and the format of the data served may
+ *   change. Therefore, you should avoid using this method in critical applications or when
+ *   responsiveness is important. In such cases you are likely better off obtaining EOP from
+ *   data stored locally, such as on the file-system or in a local database.
+ *
+ * @param offset  (optional) time offset from current time (default: 0.0).
+ * @return        Current EOP obtained from IERS or else an invalid EOP if there was an error
+ *                (errno will indicate the type of error).
+ *
+ * @since 1.7
+ *
+ * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
+ * @sa fetch_for(), fetch_for_jd(), fetch_for_mjd(), novas_fetch_eop()
+ */
+EOP EOP::fetch_current(const Interval& offset) {
+  return fetch_current(offset.seconds());
+}
+
+/**
  * Returns a reference to a statically defined standard invalid EOP. This invalid EOP may be used
  * inside any object that is invalid itself.
  *
@@ -200,5 +374,6 @@ const EOP& EOP::undefined() {
   static const EOP _invalid = EOP();
   return _invalid;
 }
+
 
 } // namespace supernovas
