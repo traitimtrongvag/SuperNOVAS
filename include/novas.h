@@ -2117,11 +2117,16 @@ enum novas_reference_ellipsoid {
  * @author Attila Kovacs
  */
 typedef struct {
-  double jd;          ///< [day] Julian day (in any time measure)
+  double jd;          ///< [day] Julian day of the measurement or prognosis (in any time measure).
   int leap;           ///< [s] Leap seconds, that is the TAI - UTC time difference.
-  double dut1;        ///< [s] UT1 - UTC time difference
-  double xp;          ///< [arcsec] Polar offset in ITRF _x_ direction.
-  double yp;          ///< [arcsec] Polar offset in ITRF _y_ direction.
+  float dut1;         ///< [s] UT1 - UTC time difference.
+  float dut1_err;     ///< [s] Standard error on UT1 - UTC time difference.
+  float xp;           ///< [arcsec] _x_<sub>p</sub>: polar offset in ITRF _x_ direction.
+  float xp_err;       ///< [arcsec] Standard error on _x_<sub>p</sub>.
+  float yp;           ///< [arcsec] _y_<sub>p</sub>: polar offset in ITRF _y_ direction.
+  float yp_err;       ///< [arcsec] Standard error on _y_<sub>p</sub>.
+  float lod;          ///< [s] Length of day (LOD) differential.
+  float lod_err;      ///< [s] Standard error on Length of day (LOD).
 } novas_eop;
 
 

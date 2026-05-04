@@ -19,47 +19,75 @@
 
 #include "novas.h"
 
+/// \cond PRIVATE
 #define LEAP_FILENAME           "leap-seconds.list"
 #define LEAP_URL                "https://hpiers.obspm.fr/iers/bul/bulc/ntp/" LEAP_FILENAME
 
 #define UNIX_SECONDS_0UTC_1JAN2000  946684800L    ///< [s] UNIX time at J2000.0
 #define NTP_UNIX_0                  2208988800LL  ///< [s] NTP timestamp of UNIX epoch (1970 Jan 1)
 
+/**
+ * IERS data file structural description.
+ */
 typedef struct {
-  char *url;
-  int head_bytes;
-  int line_len;
-  double jd_start;
-  double jd_step;
+  char *url;        ///< URL of EOP data file at IERS
+  int head_bytes;   ///< [bytes] Header bytes before regular table row data begins
+  int line_len;     ///< [byres] Length of data rows, including line feed
+  double jd_start;  ///< [day] Julian date of first entry
+  double jd_step;   ///< [day] interval between consecutive entries
+  short ijd;        ///< column index from which to parse Julian Date
+  short ixp;        ///< column index from which to parse _x_<sub>p</sub>
+  short ixpe;       ///< column index from which to parse _x_<sub>p</sub> error
+  short iyp;        ///< column index from which to parse _y_<sub>p</sub>
+  short iype;       ///< column index from which to parse _y_<sub>p</sub> error
+  short idut;       ///< column index from which to parse UT1 time difference
+  short idute;      ///< column index from which to parse UT1 time error
+  short ilod;       ///< column index from which to parse length of day (LOD) differential.
+  short ilode;      ///< column index from which to parse LOD error
 } iers_data_file;
 
+/**
+ * A individual leap seconds entry in a linked list of leap seconds
+ *
+ */
 typedef struct iers_leap_entry {
-  int unix_start;
-  int unix_end;
-  int leap;
-  struct iers_leap_entry *next;
+  int unix_start;   ///< [day] Julian date leap was introduced
+  int unix_end;     ///< [day] Julian date to which leap is valid
+  int leap;         ///< [s] Leap seconds (TAI - UTC time difference)
+  struct iers_leap_entry *next;   ///< Link to the next leap entry in list.
 } iers_leap_entry;
 
+/**
+ * A simple data buffer for downloading data chunks from IERS
+ */
+typedef struct {
+  char *buf;          ///< Allocated byte buffer
+  size_t capacity;    ///< Capacity of byte buffer
+  size_t size;        ///< Number of bytes filled
+} download_buffer;
 
-static iers_leap_entry *leaps;
-static time_t leap_expiration;
+static iers_leap_entry *leaps;    ///< Leap seconds list
+static time_t leap_expiration;    ///< UNIX time at which leap seconds list expires.
 
 // 1973.01.02 to +365 days, no head
-static iers_data_file rapid = {
+static iers_data_file finals = {
         "https://datacenter.iers.org/data/latestVersion/finals.all.iau2000.txt",
-        0, 188, NOVAS_JD_MJD0 + 41684.0, 1.0
+        0, 188, NOVAS_JD_MJD0 + 41684.0, 1.0,
+        6, 17, 27, 36, 46, 58, 68, 78, 86
 };
 
 // 1962 -- now
 static iers_data_file medium = {
         "https://datacenter.iers.org/data/latestVersion/EOP_20u24_C04_one_file_1962-now.txt",
-        729, 219, NOVAS_JD_MJD0 + 37665, 1.0
+        729, 219, NOVAS_JD_MJD0 + 37665, 1.0,
+        16, 26, 122, 38, 134, 50, 146, 111, 206
 };
 
 // 1890 -- now (0.05 year)
 static iers_data_file old = {
         "https://datacenter.iers.org/data/latestVersion/EOP_C01_IAU2000_1846-now.txt",
-        139255, 312, NOVAS_JD_MJD0 + 11367.380, 0.05 * NOVAS_TROPICAL_YEAR_DAYS
+        139255, 312, NOVAS_JD_MJD0 + 11367.380, 0.05 * NOVAS_TROPICAL_YEAR_DAYS,
+        0, 12, 71, 22, 83, 32, 93, 226, 281
 };
 
 
@@ -69,23 +97,20 @@ static iers_data_file very_old = {
         1975, 312, NOVAS_JD_MJD0 - 4703.268, 0.1 * NOVAS_TROPICAL_YEAR_DAYS
 };
 
-typedef struct {
-  char *buf;
-  size_t capacity;
-  size_t size;
-} download_buffer;
-
+/// \endcond
 
 static size_t write_to_buffer(char *ptr, size_t size, size_t nmemb, void *userdata) {
   download_buffer *data = (download_buffer *) userdata;
 
   size_t n = size * nmemb;
-  if(data->size + n >= data->capacity)
+  if(data->size + n >= data->capacity) {
+    novas_set_errno(ERANGE, "write_to_buffer", "truncating buffer lld -> lld", (long long) (data->size + n), (long long) data->capacity - 1);
     n = data->capacity - data->size - 1;
+  }
 
-  memcpy(data->buf, ptr, n);
+  memcpy(&data->buf[data->size], ptr, n);
   data->size += n;
-  data->buf[data->size] = '\0';
+  data->buf[data->size] = '\0'; // always string terminate
 
   return n;
 }
@@ -214,7 +239,6 @@ static int novas_lookup_leap(time_t t) {
   if(t > leaps->unix_end) {
     gmtime_r(&t, &tm);
     strftime(str, sizeof(str), "%c", &tm);
-    printf("### %lld > %lld\n", (long long) t, (long long) leaps->unix_end);
     return novas_error(-1, ERANGE, fn, "Time %s is beyond the leap seconds coverage range", str);
   }
 
@@ -265,27 +289,34 @@ static int eop_parse_line(iers_data_file *restrict file, int line, char *str, no
   if(end != '\n' && end != '\0')
     return novas_error(-1, EBADMSG, "eop_parse_line", "Corrupted entry or unexpected format");
 
-  if(file == &rapid) {
-    eop->jd = NOVAS_JD_MJD0 + strtod(from + 6, NULL);
-    eop->xp = strtod(from + 17, NULL);
-    eop->yp = strtod(from + 36, NULL);
-    eop->dut1 = strtod(from + 58, NULL);
+  eop->jd = NOVAS_JD_MJD0 + strtod(from + file->ijd, NULL);
+  eop->xp = (float) strtod(from + file->ixp, NULL);
+  eop->yp = (float) strtod(from + file->iyp, NULL);
+  eop->dut1 = (float) strtod(from + file->idut, NULL);
+  eop->lod = (float) strtod(from + file->ilod, NULL);
+  eop->xp_err = (float) strtod(from + file->ixpe, NULL);
+  eop->yp_err = (float) strtod(from + file->iype, NULL);
+  eop->dut1_err = (float) strtod(from + file->idute, NULL);
+  eop->lod_err = (float) strtod(from + file->ilode, NULL);
+
+  if(file == &finals) {
+    eop->lod *= 1e-3;       ///< finals LOD is milliseconds.
+    eop->lod_err *= 1e-3;
   }
-  else if(file == &medium) {
-    eop->jd = NOVAS_JD_MJD0 + strtod(from + 16, NULL);
-    eop->xp = strtod(from + 26, NULL);
-    eop->yp = strtod(from + 38, NULL);
-    eop->dut1 = strtod(from + 50, NULL);
-  }
-  else {
-    eop->jd = NOVAS_JD_MJD0 + strtod(from, NULL);
-    eop->xp = strtod(from + 12, NULL);
-    eop->yp = strtod(from + 22, NULL);
-    eop->dut1 = strtod(from + 32, NULL); // UT1 - TAI
+  else if(file == &old || file == &very_old) {
     if(fabs(eop->dut1 - 99.99) < 1e-5)
       eop->dut1 = NAN;
     else
       eop->dut1 += eop->leap;
+
+    if(fabs(eop->dut1_err - 99.99) < 1e-5)
+          eop->dut1_err = NAN;
+
+    if(fabs(eop->lod - 99.99) < 1e-5)
+      eop->lod = NAN;
+
+    if(fabs(eop->lod_err - 99.99) < 1e-5)
+      eop->lod_err = NAN;
   }
 
   if(errno)
@@ -327,9 +358,9 @@ static int novas_fetch_eop_array(double jd, novas_eop *restrict eop, int n) {
   novas_set_current_time(0, 0.0, &ts);
   mjd_now = (long) floor(novas_get_time(&ts, NOVAS_TAI) - NOVAS_JD_MJD0);
 
-  if(jd >= (rapid.jd_start + m * rapid.jd_step) && mjd <= mjd_now + 365 - n) {
+  if(jd >= (finals.jd_start + m * finals.jd_step) && mjd <= mjd_now + 365 - n) {
     // up to a year ahead...
-    prop_error(fn, novas_fetch_from_file(&rapid, jd - m * rapid.jd_step, eop, n), 0);
+    prop_error(fn, novas_fetch_from_file(&finals, jd - m * finals.jd_step, eop, n), 0);
   }
   else if(jd >= medium.jd_start + m * medium.jd_step) {
     prop_error(fn, novas_fetch_from_file(&medium, jd - m * medium.jd_step, eop, n), 0);
@@ -366,11 +397,17 @@ static int novas_eop_spline_interp(double jd, const novas_eop *restrict array, n
 
   for(i = 0; i < 4; i++) {
     const novas_eop *e = &array[i];
-    double w = spline_coeff(i - 1 - dx);
+    float w = (float) spline_coeff(i - 1 - dx);
 
     eop->xp += w * e->xp;
     eop->yp += w * e->yp;
+    eop->lod += w * e->lod;
     eop->dut1 += w * (e->dut1 - e->leap + eop->leap); // (spline UT1 - TAI) -> dUT1
+
+    eop->xp_err += w * e->xp_err;
+    eop->yp_err += w * e->yp_err;
+    eop->dut1_err += w * e->dut1_err;
+    eop->lod_err += w * e->lod_err;
   }
 
   if(errno)

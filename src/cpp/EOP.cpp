@@ -195,8 +195,8 @@ std::string EOP::to_string() const {
 }
 
 /**
- * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
- * Systems Service (IERS).
+ * Obtains cubic spline interpolated  Earth Orientation Parameters (EOP) from the International
+ * Earth Rotation and Reference Systems Service (IERS).
  *
  * NOTES:
  *
@@ -204,6 +204,9 @@ std::string EOP::to_string() const {
  *   change. Therefore, you should avoid using this method in critical applications or when
  *   responsiveness is important. In such cases you are likely better off obtaining EOP from
  *   data stored locally, such as on the file-system or in a local database.
+ *
+ * - The returned data does not include diurnal variations for ocean tides and libration.
+ *   These are added automatically in the constructors of Time and Frame as neeed.
  *
  *
  * @param jd      [day] Julian Date (preferably UTC-based).
@@ -232,8 +235,8 @@ EOP EOP::fetch_for_jd(double jd) {
 }
 
 /**
- * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
- * Systems Service (IERS).
+ * Obtains cubic spline interpolated Earth Orientation Parameters (EOP) from the International
+ * Earth Rotation and Reference Systems Service (IERS).
  *
  * NOTES:
  *
@@ -241,6 +244,9 @@ EOP EOP::fetch_for_jd(double jd) {
  *   change. Therefore, you should avoid using this method in critical applications or when
  *   responsiveness is important. In such cases you are likely better off obtaining EOP from
  *   data stored locally, such as on the file-system or in a local database.
+ *
+ * - The returned data does not include diurnal variations for ocean tides and libration.
+ *   These are added automatically in the constructors of Time and Frame as neeed.
  *
  * @param mjd     [day] Modified Julian Date (preferably UTC-based).
  * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
@@ -259,8 +265,8 @@ EOP EOP::fetch_for_mjd(double mjd) {
 }
 
 /**
- * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
- * Systems Service (IERS).
+ * Obtains cubic spline interpolated Earth Orientation Parameters (EOP) from the International
+ * Earth Rotation and Reference Systems Service (IERS).
  *
  * NOTES:
  *
@@ -268,6 +274,9 @@ EOP EOP::fetch_for_mjd(double mjd) {
  *   change. Therefore, you should avoid using this method in critical applications or when
  *   responsiveness is important. In such cases you are likely better off obtaining EOP from
  *   data stored locally, such as on the file-system or in a local database.
+ *
+ * - The returned data does not include diurnal variations for ocean tides and libration.
+ *   These are added automatically in the constructors of Time and Frame as neeed.
  *
  * @param time    UNIX time for which to try get EOP.
  * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
@@ -286,8 +295,8 @@ EOP EOP::fetch_for(const time_t time) {
 }
 
 /**
- * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
- * Systems Service (IERS).
+ * Obtains cubic spline interpolated  Earth Orientation Parameters (EOP) from the International
+ * Earth Rotation and Reference Systems Service (IERS).
  *
  * NOTES:
  *
@@ -295,6 +304,9 @@ EOP EOP::fetch_for(const time_t time) {
  *   change. Therefore, you should avoid using this method in critical applications or when
  *   responsiveness is important. In such cases you are likely better off obtaining EOP from
  *   data stored locally, such as on the file-system or in a local database.
+ *
+ * - The returned data does not include diurnal variations for ocean tides and libration.
+ *   These are added automatically in the constructors of Time and Frame as neeed.
  *
  * @param date    Calendar date for which to try get EOP.
  * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
@@ -312,8 +324,9 @@ EOP EOP::fetch_for(const CalendarDate& date) {
 }
 
 /**
- * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
- * Systems Service (IERS) for the current time instant, or an offset time from the current time.
+ * Obtains cubic spline interpolated Earth Orientation Parameters (EOP) from the International
+ * Earth Rotation and Reference Systems Service (IERS) for the current time instant, or an offset
+ * time from the current time.
  *
  * NOTES:
  *
@@ -321,6 +334,9 @@ EOP EOP::fetch_for(const CalendarDate& date) {
  *   change. Therefore, you should avoid using this method in critical applications or when
  *   responsiveness is important. In such cases you are likely better off obtaining EOP from
  *   data stored locally, such as on the file-system or in a local database.
+ *
+ * - The returned data does not include diurnal variations for ocean tides and libration.
+ *   These are added automatically in the constructors of Time and Frame as neeed.
  *
  * @param offset  [s] (optional) time offset from current time (default: 0.0).
  * @return        Current EOP obtained from IERS or else an invalid EOP if there was an error
@@ -339,8 +355,9 @@ EOP EOP::fetch_current(double offset) {
 }
 
 /**
- * Obtains Earth Orientation Parameters (EOP) from the International Earth Rotation and Reference
- * Systems Service (IERS) for the current time instant, or an offset time from the current time.
+ * Obtains cubic spline interpolated Earth Orientation Parameters (EOP) from the International
+ * Earth Rotation and Reference Systems Service (IERS) for the current time instant, or an offset
+ * time from the current time.
  *
  * NOTES:
  *
@@ -348,6 +365,9 @@ EOP EOP::fetch_current(double offset) {
  *   change. Therefore, you should avoid using this method in critical applications or when
  *   responsiveness is important. In such cases you are likely better off obtaining EOP from
  *   data stored locally, such as on the file-system or in a local database.
+ *
+ * - The returned data does not include diurnal variations for ocean tides and libration.
+ *   These are added automatically in the constructors of Time and Frame as neeed.
  *
  * @param offset  (optional) time offset from current time (default: 0.0).
  * @return        Current EOP obtained from IERS or else an invalid EOP if there was an error

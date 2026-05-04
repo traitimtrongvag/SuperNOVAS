@@ -19,7 +19,7 @@ int main(int argc, const char *argv[]) {
     if(strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0) {
       printf("\n");
       printf(" iers-fetch -- Obtains leap second and Earth Orientation Parameters from IERS.\n");
-      printf("               (C) 2026 Attila kovacs\n\n");
+      printf("               (C) 2026 Attila Kovacs\n\n");
       printf(" Syntax: iers-fetch [YYYY-mm-dd[[T]HH:MM:SS[.SSS]]\n\n");
       return 0;
     }
@@ -34,7 +34,17 @@ int main(int argc, const char *argv[]) {
   if(novas_fetch_eop(novas_get_time(&ts, NOVAS_UTC), &eop) != 0)
     return 1;
 
-  printf("  LEAP = %3d,   DUT1 = %9.6f,   XP = %9.6f,   YP = %9.6f\n", eop.leap, eop.dut1, eop.xp, eop.yp);
+  printf("  LEAP = %10d\n", eop.leap);
+  printf("  XP   = %10.6f +- %8.6f arcsec\n", eop.xp, eop.xp_err);
+  printf("  YP   = %10.6f +- %8.6f arcsec\n", eop.yp, eop.yp_err);
+  if(isnan(eop.dut1))
+    printf("  DUT1 =        n/a\n");
+  else
+    printf("  DUT1 = %10.6f +- %8.6f s\n", eop.dut1, eop.dut1_err);
+  if(isnan(eop.lod))
+    printf("  LOD  =        n/a\n");
+  else
+    printf("  LOD  = %10.6f +- %8.6f ms\n", 1e3 * eop.lod, 1e3 * eop.lod_err);
 
   return 0;
 }
