@@ -3455,7 +3455,7 @@ int novas_equals_frame(const novas_frame *a, const novas_frame *b);
 
 // in iers.c
 /// @c_earth
-int novas_fetch_eop(double jd, novas_eop *eop);
+int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop);
 
 void novas_cleanup_eop();
 

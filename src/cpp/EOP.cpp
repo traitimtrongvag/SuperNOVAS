@@ -208,8 +208,8 @@ std::string EOP::to_string() const {
  * - The returned data does not include diurnal variations for ocean tides and libration.
  *   These are added automatically in the constructors of Time and Frame as neeed.
  *
- *
- * @param jd      [day] Julian Date (preferably UTC-based).
+ * @param jd              [day] Julian Date (preferably UTC-based).
+ * @param timeout_millis  [ms] (optional) HTTP connection timeout, or &lt;=0 to leave unchanged.
  * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
  *                indicate the type of error).
  *
@@ -218,11 +218,11 @@ std::string EOP::to_string() const {
  * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
  * @sa fetch_for_mjd(), fetch_for(), fetch_current(), novas_fetch_eop()
  */
-EOP EOP::fetch_for_jd(double jd) {
+EOP EOP::fetch_for_jd(double jd, long timeout_millis) {
   static const char *fn = "EOP::fetch_for_jd()";
 
   novas_eop eop = {};
-  if(novas_fetch_eop(jd, &eop) != 0) {
+  if(novas_fetch_eop(jd, timeout_millis, &eop) != 0) {
     novas_trace_invalid(fn);
     return EOP::undefined();
   }
@@ -248,7 +248,8 @@ EOP EOP::fetch_for_jd(double jd) {
  * - The returned data does not include diurnal variations for ocean tides and libration.
  *   These are added automatically in the constructors of Time and Frame as neeed.
  *
- * @param mjd     [day] Modified Julian Date (preferably UTC-based).
+ * @param mjd             [day] Modified Julian Date (preferably UTC-based).
+ * @param timeout_millis  [ms] (optional) HTTP connection timeout, or &lt;=0 to leave unchanged.
  * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
  *                indicate the type of error).
  *
@@ -257,8 +258,8 @@ EOP EOP::fetch_for_jd(double jd) {
  * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
  * @sa fetch_for_jd(), fetch_for(), fetch_current(), novas_fetch_eop()
  */
-EOP EOP::fetch_for_mjd(double mjd) {
-  EOP e = fetch_for_jd(NOVAS_JD_MJD0 + mjd);
+EOP EOP::fetch_for_mjd(double mjd, long timeout_millis) {
+  EOP e = fetch_for_jd(NOVAS_JD_MJD0 + mjd, timeout_millis);
   if(!e.is_valid())
     novas_trace_invalid("EOP::fetch_for_mjd()");
   return e;
@@ -278,7 +279,8 @@ EOP EOP::fetch_for_mjd(double mjd) {
  * - The returned data does not include diurnal variations for ocean tides and libration.
  *   These are added automatically in the constructors of Time and Frame as neeed.
  *
- * @param time    UNIX time for which to try get EOP.
+ * @param time            UNIX time for which to try get EOP.
+ * @param timeout_millis  [ms] (optional) HTTP connection timeout, or &lt;=0 to leave unchanged.
  * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
  *                indicate the type of error).
  *
@@ -287,8 +289,8 @@ EOP EOP::fetch_for_mjd(double mjd) {
  * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
  * @sa fetch_for_jd(), fetch_for_mjd(), fetch_current(), novas_fetch_eop()
  */
-EOP EOP::fetch_for(const time_t time) {
-  EOP e = fetch_for_jd(NOVAS_JD_J2000 + (time - UNIX_SECONDS_0UTC_1JAN2000) / 86400.0);
+EOP EOP::fetch_for(const time_t time, long timeout_millis) {
+  EOP e = fetch_for_jd(NOVAS_JD_J2000 + (time - UNIX_SECONDS_0UTC_1JAN2000) / 86400.0, timeout_millis);
   if(!e.is_valid())
     novas_trace_invalid("EOP::fetch_for()");
   return e;
@@ -308,7 +310,8 @@ EOP EOP::fetch_for(const time_t time) {
  * - The returned data does not include diurnal variations for ocean tides and libration.
  *   These are added automatically in the constructors of Time and Frame as neeed.
  *
- * @param date    Calendar date for which to try get EOP.
+ * @param date            Calendar date for which to try get EOP.
+ * @param timeout_millis  [ms] (optional) HTTP connection timeout, or &lt;=0 to leave unchanged.
  * @return        EOP obtained from IERS or else an invalid EOP if there was an error (errno will
  *                indicate the type of error).
  *
@@ -317,10 +320,10 @@ EOP EOP::fetch_for(const time_t time) {
  * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
  * @sa fetch_for_jd(), fetch_for_mjd(), fetch_current(), novas_fetch_eop()
  */
-EOP EOP::fetch_for(const CalendarDate& date) {
+EOP EOP::fetch_for(const CalendarDate& date, long timeout_millis) {
   struct tm tm = {};
   date.break_down(&tm);
-  return fetch_for(mktime(&tm));
+  return fetch_for(mktime(&tm), timeout_millis);
 }
 
 /**
@@ -338,7 +341,8 @@ EOP EOP::fetch_for(const CalendarDate& date) {
  * - The returned data does not include diurnal variations for ocean tides and libration.
  *   These are added automatically in the constructors of Time and Frame as neeed.
  *
- * @param offset  [s] (optional) time offset from current time (default: 0.0).
+ * @param offset          [s] (optional) time offset from current time (default: 0.0).
+ * @param timeout_millis  [ms] (optional) HTTP connection timeout, or &lt;=0 to leave unchanged.
  * @return        Current EOP obtained from IERS or else an invalid EOP if there was an error
  *                (errno will indicate the type of error).
  *
@@ -347,8 +351,8 @@ EOP EOP::fetch_for(const CalendarDate& date) {
  * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
  * @sa fetch_for(), fetch_for_jd(), fetch_for_mjd(), novas_fetch_eop()
  */
-EOP EOP::fetch_current(double offset) {
-  EOP eop = fetch_for(time(NULL) + (time_t) std::round(offset));
+EOP EOP::fetch_current(double offset, long timeout_millis) {
+  EOP eop = fetch_for(time(NULL) + (time_t) floor(offset + 0.5), timeout_millis);
   if(!eop.is_valid())
     novas_trace_invalid("EOP::fetch_current()");
   return eop;
@@ -369,7 +373,8 @@ EOP EOP::fetch_current(double offset) {
  * - The returned data does not include diurnal variations for ocean tides and libration.
  *   These are added automatically in the constructors of Time and Frame as neeed.
  *
- * @param offset  (optional) time offset from current time (default: 0.0).
+ * @param offset          (optional) time offset from current time (default: 0.0).
+ * @param timeout_millis  [ms] (optional) HTTP connection timeout, or &lt;=0 to leave unchanged.
  * @return        Current EOP obtained from IERS or else an invalid EOP if there was an error
  *                (errno will indicate the type of error).
  *
@@ -378,8 +383,8 @@ EOP EOP::fetch_current(double offset) {
  * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
  * @sa fetch_for(), fetch_for_jd(), fetch_for_mjd(), novas_fetch_eop()
  */
-EOP EOP::fetch_current(const Interval& offset) {
-  return fetch_current(offset.seconds());
+EOP EOP::fetch_current(const Interval& offset, long timeout_millis) {
+  return fetch_current(offset.seconds(), timeout_millis);
 }
 
 /**

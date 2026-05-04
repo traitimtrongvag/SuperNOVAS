@@ -10,7 +10,7 @@ include ../../config.mk
 # Our own include directory
 CPPFLAGS += -I../../include
 CFLAGS += -I../../include -I../../legacy -pg -Wall
-LDFLAGS += -lm -fprofile-arcs -ftest-coverage
+LDFLAGS += -lm -lcurl -fprofile-arcs -ftest-coverage
 
 # cppcheck options for 'check' target. You can add additional options by
 # setting the CHECKEXTRA variable (e.g. in shell) prior to invoking 'make'.

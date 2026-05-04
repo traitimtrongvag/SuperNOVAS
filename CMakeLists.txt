@@ -99,6 +99,8 @@ if(HAS_MATHLIB)
     string(APPEND PC_LIBS_PRIVATE -l${MATHLIB} " ")
 endif()
 
+check_library_exists(curl curl_init "" HAS_CURL)
+
 if(ENABLE_CALCEPH OR ENABLE_CSPICE)
     find_package(Threads)
     

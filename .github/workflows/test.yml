@@ -46,7 +46,7 @@ jobs:
     - name: install dependencies
       run: |
         sudo apt-get update -q -y 
-        sudo apt-get install -y lcov
+        sudo apt-get install -y lcov libcurl4-openssl-dev
 
     - name: Run regression tests
       run: make test
@@ -93,7 +93,7 @@ jobs:
           distro: ${{ matrix.distro }}
           install: |
             apt-get update -q -y
-            apt-get install -q -y make gcc g++ gfortran
+            apt-get install -q -y make gcc g++ gfortran libcurl4-openssl-dev
           run: |
             export ENABLE_CPP=1
             make test
@@ -116,6 +116,11 @@ jobs:
 #        run: |
 #           sudo apt-get update -q -y
 #           sudo apt-get install -y libcalceph-dev
+
+      - name: Install curl
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -y libcurl4-openssl-dev
         
       - name: Build
         run: |

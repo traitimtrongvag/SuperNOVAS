@@ -18,7 +18,7 @@ LIB ?= ../../lib
 CPPFLAGS += -I../../include
 
 # We'll need math functions to link
-LDFLAGS += -lm
+LDFLAGS += -lm -lcurl
 
 SOLSYS_TARGETS :=
 SHARED_TARGETS := $(LIB)/libsupernovas.$(SOEXT) $(LIB)/libnovas.$(SOEXT)

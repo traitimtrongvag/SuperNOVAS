@@ -2,7 +2,7 @@
 
 CPPFLAGS += -I../../include
 CFLAGS += -g
-LDFLAGS += --coverage -lm 
+LDFLAGS += --coverage -lm -lcurl
 
 include ../../config.mk
 
@@ -20,8 +20,8 @@ build: libnovas.a $(TESTS)
 run: build
 	@for prog in $(TESTS) ; do ./$${prog} || exit 1 ; done
 
-%Test: %Test.cpp $(CPP_OBJECTS)
-	$(CXX) -o $@ $(CPPFLAGS) -g $(CXXFLAGS) $^ $(LDFLAGS) libnovas.a
+%Test: %Test.cpp $(CPP_OBJECTS) libnovas.a 
+	$(CXX) -o $@ $(CPPFLAGS) -g $(CXXFLAGS) $^ $(LDFLAGS)
 
 libnovas.a: $(OBJECTS)
 	ar -rc $@ $^

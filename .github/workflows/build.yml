@@ -45,6 +45,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -y libcurl4-openssl-dev
+
       - name: Build static library
         run: make static
 
@@ -78,6 +84,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+      
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -y libcurl4-openssl-dev
 
       - name: Build static C++ library
         run: make static-cpp
@@ -125,8 +137,10 @@ jobs:
         with:
           release: "14.0"
           prepare: |
-            pkg install -y gmake
+            pkg install -y gmake curl devel/pkgconf
           run: |
             echo Building on FreeBSD $(uname -m)
+            export CFLAGS=`pkg-config --cflags libcurl`
+            export LDFLAGS=`pkg-config --libs libcurl`
             gmake static
             gmake shared

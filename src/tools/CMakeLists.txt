@@ -14,4 +14,4 @@ add_executable(iers-fetch iers-fetch.c)
 target_include_directories(iers-fetch PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
 # Link with math libs as necessary
-target_link_libraries(iers_fetch PRIVATE core)
+target_link_libraries(iers-fetch PRIVATE core)

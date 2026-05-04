@@ -31,7 +31,7 @@ int main(int argc, const char *argv[]) {
     novas_set_current_time(0, 0.0, &ts);
   }
 
-  if(novas_fetch_eop(novas_get_time(&ts, NOVAS_UTC), &eop) != 0)
+  if(novas_fetch_eop(novas_get_time(&ts, NOVAS_UTC), 0L, &eop) != 0)
     return 1;
 
   printf("  LEAP = %10d\n", eop.leap);
