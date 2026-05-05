@@ -1442,7 +1442,7 @@ public:
   /// @ingroup refract
   Weather average_weather() const;
 
-  GeodeticObserver to_observer(const EOP& eop) const;
+  GeodeticObserver to_observer(const EOP& eop = EOP::undefined()) const;
 
   std::string to_string(enum novas_separator_type separator = NOVAS_SEP_UNITS_AND_SPACES, int decimals = 3) const;
 
@@ -1554,9 +1554,9 @@ protected:
 
 public:
 
-  GeodeticObserver(const Site& site, const EOP& eop);
+  explicit GeodeticObserver(const Site& site, const EOP& eop = EOP::undefined());
 
-  GeodeticObserver(const Site& site, const Velocity& itrs_vel, const EOP& eop);
+  GeodeticObserver(const Site& site, const Velocity& itrs_vel, const EOP& eop = EOP::undefined());
 
   GeodeticObserver(const Site& site, const EOP& eop, const ScalarVelocity& horizontal, const Angle& direction,
           const ScalarVelocity& vertical = ScalarVelocity::stationary());
@@ -1754,7 +1754,7 @@ public:
 
   Time to_time(int leap_seconds, double dut1, novas_timescale timescale = NOVAS_UTC) const;
 
-  Time to_time(const EOP& eop, novas_timescale timescale = NOVAS_UTC) const;
+  Time to_time(const EOP& eop = EOP::undefined(), novas_timescale timescale = NOVAS_UTC) const;
 
   std::string to_date_string(enum novas_date_format fmt = NOVAS_YMD) const;
 
@@ -1794,19 +1794,19 @@ public:
 
   Time(double jd, int leap_seconds, double dUT1, enum novas_timescale timescale = NOVAS_TT);
 
-  Time(double jd, const EOP& eop, enum novas_timescale timescale = NOVAS_TT);
+  explicit Time(double jd, const EOP& eop = EOP::undefined(), enum novas_timescale timescale = NOVAS_TT);
 
   Time(long ijd, double fjd, int leap_seconds, double dUT1, enum novas_timescale timescale = NOVAS_TT);
 
-  Time(long ijd, double fjd, const EOP& eop, enum novas_timescale timescale = NOVAS_TT);
+  Time(long ijd, double fjd, const EOP& eop = EOP::undefined(), enum novas_timescale timescale = NOVAS_TT);
 
   Time(const std::string& timestamp, int leap_seconds, double dUT1, enum novas_timescale timescale = NOVAS_UTC);
 
-  Time(const std::string& timestamp, const EOP& eop, enum novas_timescale timescale = NOVAS_UTC);
+  explicit Time(const std::string& timestamp, const EOP& eop = EOP::undefined(), enum novas_timescale timescale = NOVAS_UTC);
 
   Time(const struct timespec *t, int leap_seconds, double dUT1);
 
-  Time(const struct timespec *t, const EOP& eop);
+  explicit Time(const struct timespec *t, const EOP& eop = EOP::undefined());
 
   explicit Time(const novas_timespec *t);
 
@@ -1896,9 +1896,9 @@ public:
 
   static Time from_mjd(double mjd, int leap_seconds, double dUT1, enum novas_timescale timescale = NOVAS_TT);
 
-  static Time from_mjd(double mjd, const EOP& eop, enum novas_timescale timescale = NOVAS_TT);
+  static Time from_mjd(double mjd, const EOP& eop = EOP::undefined(), enum novas_timescale timescale = NOVAS_TT);
 
-  static Time now(const EOP& eop);
+  static Time now(const EOP& eop = EOP::undefined());
 
   static const Time& j2000();
 

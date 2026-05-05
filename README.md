@@ -363,7 +363,16 @@ Or, to stage the installation (to `/usr`) under a 'build root':
   $ make DESTDIR="/tmp/stage" install
 ```
 
-#### GNU make on BSD
+> [!NOTE]
+> if you want to build __SuperNOVAS__ for with your old NOVAS C applications you might want to further customize the 
+> build. See section on 
+> [legacy application](https://github.com/Sigmyne/SuperNOVAS/blob/main/doc/USAGE-C99.md#legacy-application-c99) in the 
+> [C99 User's guide](USAGE-C99.md). 
+
+
+#### Building with GNU make on BSD
+
+<details>
 
 On BSD, you will need to use `gmake` instead of `make` (see section on dependencies above). You will also need 
 `pkgconf` s.t. `gcc` may locate the dependencies (headers and libraries). In practice, it means setting 
@@ -383,11 +392,6 @@ Now you can build __SuperNOVAS__, for example as a shared library, with:
 
 </details>
 
-> [!NOTE]
-> if you want to build __SuperNOVAS__ for with your old NOVAS C applications you might want to further customize the 
-> build. See section on 
-> [legacy application](https://github.com/Sigmyne/SuperNOVAS/blob/main/doc/USAGE-C99.md#legacy-application-c99) in the 
-> [C99 User's guide](USAGE-C99.md). 
 
 
 <a name="cmake-build"></a>

@@ -49,12 +49,13 @@ namespace supernovas {
  *
  * @since 1.6
  * @sa Observer::frame_at(), reduced_accuracy(), @ref solar-system
+ * @sa novas_set_auto_fetch_eop()
  */
 Frame::Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy)
 : _observer(obs.copy()), _time(time) {
   static const char *fn = "Frame()";
 
-  double xp = NAN, yp = NAN;
+  double xp = 0.0, yp = 0.0; // Default (non-fetching) values for non-geodetic observers
 
   errno = 0;
 
@@ -70,6 +71,11 @@ Frame::Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy
     novas_set_errno(EINVAL, fn, "input observer is invalid");
   if(!time.is_valid())
     novas_set_errno(EINVAL, fn, "input time is invalid");
+
+  if(!obs.is_geodetic()) {
+    // Leave polar offsets undefined for non-geodetic observing frames.
+    _frame.dx = _frame.dy = NAN;
+  }
 
   _valid = (errno == 0);
 }

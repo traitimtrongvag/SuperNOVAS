@@ -26,6 +26,14 @@
 #include <stdint.h>
 #include <time.h>
 
+#ifndef EXTERN
+#  if(WIN32)
+#    define EXTERN __declspec(dllimport) extern
+#  else
+#    define EXTERN extern
+#  endif
+#endif
+
 /// \cond PRIVATE
 #if __STDC_VERSION__ < 199901L
 #  define restrict                        ///< No 'restrict' keyword prior to C99
@@ -2115,6 +2123,8 @@ enum novas_reference_ellipsoid {
  *
  * @since 1.7
  * @author Attila Kovacs
+ *
+ * @c_earth
  */
 typedef struct {
   double jd;          ///< [day] Julian day of the measurement or prognosis (in any time measure).
@@ -3457,7 +3467,15 @@ int novas_equals_frame(const novas_frame *a, const novas_frame *b);
 /// @c_earth
 int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop);
 
+/// @c_earth
 void novas_cleanup_eop();
+
+/// @ingroup earth
+void novas_set_auto_fetch_eop(int enabled);
+
+/// @ingroup earth
+int novas_is_auto_fetch_eop();
+
 
 
 // <================= END of SuperNOVAS API =====================>

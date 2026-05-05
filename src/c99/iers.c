@@ -39,11 +39,11 @@
 #endif
 
 /// \cond PRIVATE
-#define LEAP_FILENAME           "leap-seconds.list"
-#define LEAP_URL                "https://" HPIERS "/iers/bul/bulc/ntp/" LEAP_FILENAME
+#define LEAP_FILENAME               "leap-seconds.list"
+#define LEAP_URL                    "https://" HPIERS "/iers/bul/bulc/ntp/" LEAP_FILENAME
 
 #define UNIX_SECONDS_0UTC_1JAN2000  946684800L    ///< [s] UNIX time at J2000.0
-#define NTP_UNIX_EPOCH                  2208988800LL  ///< [s] NTP timestamp of UNIX epoch (1970 Jan 1)
+#define NTP_UNIX_EPOCH              2208988800LL  ///< [s] NTP timestamp of UNIX epoch (1970 Jan 1)
 
 /**
  * IERS data file structural description.
@@ -116,6 +116,8 @@ static iers_data_file very_old = { NULL,
         1975, 312, NOVAS_JD_MJD0 - 4703.268, 0.1 * NOVAS_TROPICAL_YEAR_DAYS,
         0, 12, 71, 22, 83, 32, 93, 226, 281
 };
+
+static int auto_fetch_eop = 1;    /// Enable fetching EOP from IERS as needed by default
 
 /// \endcond
 
@@ -552,7 +554,7 @@ void novas_cleanup_eop() {
  * @author Attila Kovacs
  *
  * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
- * @sa novas_make_frame(), novas_set_time(), @ref earth
+ * @sa novas_make_frame(), novas_set_time(), novas_set_auto_fetch_eop(), @ref earth
  */
 int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop) {
   static const char *fn = "novas_fetch_eop";
@@ -580,5 +582,60 @@ int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop) {
   }
 
   return novas_eop_spline_interp(jd, array, eop);
+#endif
+}
+
+/**
+ * Disable or Re-enabled the automatic fetching of Earth Orientation Parameter values from
+ * IERS, when these are left undefined (NAN) when initializing astrometric time or observing
+ * frame instances.
+ *
+ * If set to TRUE (non-zero) then when an astrometric time is initialized with an undefined EOP,
+ * whose dUT1 value is NAN, it will automatically fetch appropriate leap second and dUT1 values
+ * from IERS, if possible. Similarly, if an observing frame is configured with a _x_<sub>p</sub>
+ * or _y_<sub>p</sub> values are NAN, the frame will fetch appropriate polar offsets from IERS
+ * for the time of observation.
+ *
+ * The default value of this global setting is TRUE (1), hence the automatic fetching of EOP
+ * values from IERS is enabled by default, and will override NAN EOP values with the fetched
+ * interpolated data, whenever possible.
+ *
+ * If you do not want this behavior, e.g. because of the associated arbitrary latencies involved
+ * with getting data from IERS, or because you are using __SuperNOVAS__ offline, then simply
+ * call this function with FALSE (0) to disable the automatic fetching of EOP values.
+ *
+ * @param enabled     TRUE (non-zero) to enabled automatic fetching of EOP values from IERS,
+ *                    or else FALSE (0) to disable. By default EOP fetching is enabled.
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ *
+ * @sa novas_is_auto_fetch_eop(), novas_fetch_eop()
+ * @sa novas_set_time(), novas_make_frame()
+ * @sa Time, Frame, GeodeticObserver, CalendarDate::to_time()
+ */
+void novas_set_auto_fetch_eop(int enabled) {
+#if !WITHOUT_CURL
+  auto_fetch_eop = (enabled != 0);
+#endif
+}
+
+/**
+ * Checks if automatic fetching of Earth Orientation Parameter values from IERS is
+ * allowed.
+ *
+ * @return    TRUE (1) if automatic fetching of EOP values from IERS is allowed, or else
+ *            FALSE (0) if fetching is disabled.
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ *
+ * @sa novas_set_auto_fetch_eop()
+ */
+int novas_is_auto_fetch_eop() {
+#if WITHOUT_CURL
+  return 0;
+#else
+  return auto_fetch_eop;
 #endif
 }

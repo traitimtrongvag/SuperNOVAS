@@ -19,6 +19,9 @@ public:
 
   explicit TestUtil(const std::string& classname) : _classname(classname) {
     //novas::novas_debug(novas::NOVAS_DEBUG_ON);
+
+    // Disable fetching EOP from IERS.
+    novas_set_auto_fetch_eop(false);
   }
 
   bool equals(const std::string& funcname, double a, double b, double precision = 0.0) {
