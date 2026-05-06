@@ -46,12 +46,18 @@ namespace supernovas {
  * @param obs         observer location
  * @param time        time of observation
  * @param accuracy    (optional) NOVAS_FULL_ACCURACY (default) or NOVAS_REDUCED_ACCURACY.
+ * @param eop         (optional) Earth Orientation Parameters (polar offsets) to assume for non
+ *                    geodetic observers. Typically, an observer that is not referenced to Earth's
+ *                    surface should not need EOP. However, the user may supply the polar offsets
+ *                    _x_<sub>p</sub>, _y_<sub>p</sub> here to use in the unlikely case they want
+ *                    to transform geometric positions for a space-based observer to/from the
+ *                    Earth-fixed ITRS with sub-arcsecond level accuracy (since 1.7).
  *
  * @since 1.6
  * @sa Observer::frame_at(), reduced_accuracy(), @ref solar-system
  * @sa novas_set_auto_fetch_eop()
  */
-Frame::Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy)
+Frame::Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy, const EOP& eop)
 : _observer(obs.copy()), _time(time) {
   static const char *fn = "Frame()";
 
@@ -63,6 +69,10 @@ Frame::Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy
     const GeodeticObserver *go = dynamic_cast<const GeodeticObserver *>(_observer);
     xp = go->mean_eop().xp().mas();
     yp = go->mean_eop().yp().mas();
+  }
+  else if(eop.is_valid()) {
+    xp = eop.xp().mas();
+    yp = eop.yp().mas();
   }
 
   if(novas_make_frame(accuracy, obs._novas_observer(), time._novas_timespec(), xp, yp, &_frame) != 0)

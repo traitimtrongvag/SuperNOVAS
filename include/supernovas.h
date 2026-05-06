@@ -1942,7 +1942,7 @@ private:
   void diurnal_correct();
 
 public:
-  Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy = NOVAS_FULL_ACCURACY);
+  Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy = NOVAS_FULL_ACCURACY, const EOP& eop = EOP::undefined());
 
   Frame(const Frame& frame);
 
