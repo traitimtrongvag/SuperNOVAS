@@ -999,9 +999,10 @@ int novas_print_dms(double degrees, enum novas_separator_type sep, int decimals,
 int novas_offset_by(double lon, double lat, double direction, double distance, double *restrict out_lon, double *restrict out_lat) {
   static const char *fn = "novas_offset_by";
 
+  const double eps = 1e-12;  // precision tolerance around poles
   double clat, slat, cD, sD_clat, cb;
 
-  if(fabs(lat) > 90.0)
+  if(fabs(lat) > 90.0 + eps)
     return novas_error(-1, EINVAL, fn, "latitude is outside of the [-90:90] range.");
 
   if(distance == 0.0) {
@@ -1015,17 +1016,17 @@ int novas_offset_by(double lon, double lat, double direction, double distance, d
 
   clat = cos(lat * DEGREE);
 
-  if(fabs(clat) < 1e-12) {
+  if(fabs(clat) < eps) {
     // Very close to the pole, longitude is undefined, but latitude can be determined
     // assuming that we start exactly from the pole.
     if(out_lat) {
-      *out_lat = remainder(distance, DEG360);
+      *out_lat = remainder(90.0 - distance, DEG360);
 
       // wrap as needed...
       if(*out_lat > 90.0)
-        *out_lat = 180.0 - lat;
+        *out_lat = 180.0 - *out_lat;
       else if(*out_lat < -90.0)
-        *out_lat = -180.0 - lat;
+        *out_lat = -180.0 - *out_lat;
     }
 
     if(out_lon) {

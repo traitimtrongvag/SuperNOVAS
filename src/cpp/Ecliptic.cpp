@@ -297,7 +297,7 @@ Ecliptic Ecliptic::offset(double direction_rad, double distance_rad) const {
  * @sa distance_to(), Equatorial::offset(), Galactic::offset(), Horizontal::offset()
  */
 Ecliptic Ecliptic::offset(const Angle& direction, const Angle& distance) const {
-  return offset(distance.rad(), direction.rad());
+  return offset(direction.rad(), distance.rad());
 }
 
 /**

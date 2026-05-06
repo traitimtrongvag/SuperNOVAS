@@ -194,7 +194,7 @@ Galactic Galactic::offset(double direction_rad, double distance_rad) const {
  * @sa distance_to(), Equatorial::offset(), Ecliptic::offset(), Horizontal::offset()
  */
 Galactic Galactic::offset(const Angle& direction, const Angle& distance) const {
-  return offset(distance.rad(), direction.rad());
+  return offset(direction.rad(), distance.rad());
 }
 
 /**

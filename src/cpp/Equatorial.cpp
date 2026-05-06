@@ -260,7 +260,7 @@ Equatorial Equatorial::offset(double direction_rad, double distance_rad) const {
  * @sa distance_to(), Ecliptic::offset(), Galactic::offset(), Horizontal::offset()
  */
 Equatorial Equatorial::offset(const Angle& direction, const Angle& distance) const {
-  return offset(distance.rad(), direction.rad());
+  return offset(direction.rad(), distance.rad());
 }
 
 /**
