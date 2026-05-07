@@ -3468,10 +3468,13 @@ int novas_equals_frame(const novas_frame *a, const novas_frame *b);
 int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop);
 
 /// @c_earth
+int novas_fetch_eop_unix(time_t t, long timeout_millis, novas_eop *eop);
+
+/// @c_earth
 void novas_cleanup_eop();
 
 /// @ingroup earth
-void novas_set_auto_fetch_eop(int enabled);
+int novas_set_auto_fetch_eop(int enabled);
 
 /// @ingroup earth
 int novas_is_auto_fetch_eop();

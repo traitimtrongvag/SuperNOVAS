@@ -2734,6 +2734,20 @@ static int test_offset_by() {
   return n;
 }
 
+static int test_fetch_eop() {
+  int n = 0;
+  novas_eop eop = {};
+
+  if(check("fetch_eop:eop:null", -1, novas_fetch_eop(NOVAS_JD_J2000, 0, NULL))) n++;
+  if(check("fetch_eop:jd:low", -1, novas_fetch_eop(0.0, 0, &eop))) n++;
+
+#if WITHOUT_CURL
+  if(check("fetch_eop:no_curl", -1, novas_fetch_eop_unix(time(NULL), 0, NULL))) n++;
+#endif
+
+  return n;
+}
+
 
 int main(int argc, const char *argv[]) {
   int n = 0;
@@ -2970,6 +2984,7 @@ int main(int argc, const char *argv[]) {
   if(test_sys_to_gcrs()) n++;
 
   if(test_offset_by()) n++;
+  if(test_fetch_eop()) n++;
 
   if(n) fprintf(stderr, " -- FAILED %d tests\n", n);
   else fprintf(stderr, " -- OK\n");

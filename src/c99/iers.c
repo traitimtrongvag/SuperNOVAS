@@ -28,6 +28,10 @@
 
 #include "novas.h"
 
+/// \cond PRIVATE
+#define UNIX_SECONDS_0UTC_1JAN2000  946684800L    ///< [s] UNIX time at J2000.0
+/// \endcond
+
 #if !WITHOUT_CURL
 
 #if SKIP_IERS_DNS_LOOKUP
@@ -41,8 +45,6 @@
 /// \cond PRIVATE
 #define LEAP_FILENAME               "leap-seconds.list"
 #define LEAP_URL                    "https://" HPIERS "/iers/bul/bulc/ntp/" LEAP_FILENAME
-
-#define UNIX_SECONDS_0UTC_1JAN2000  946684800L    ///< [s] UNIX time at J2000.0
 #define NTP_UNIX_EPOCH              2208988800LL  ///< [s] NTP timestamp of UNIX epoch (1970 Jan 1)
 
 /**
@@ -117,7 +119,11 @@ static iers_data_file very_old = { NULL,
         0, 12, 71, 22, 83, 32, 93, 226, 281
 };
 
+#if WITHOUT_CURL
+static int auto_fetch_eop = 0;    /// Disable fetching EOP from IERS as needed by default
+#else
 static int auto_fetch_eop = 1;    /// Enable fetching EOP from IERS as needed by default
+#endif
 
 /// \endcond
 
@@ -255,28 +261,21 @@ static int novas_lookup_leap(time_t t) {
   char str[40] = {'\0'};
   long long expiration = 0LL;
 
-  if(!leaps) {
-    leaps = load_leaps_async(&expiration);
-    if(!leaps)
-      return novas_error(-1, errno, fn, "Could not obtain leap seconds list");
-    leap_expiration = (time_t) expiration;
-  }
-  else if(time(NULL) > leap_expiration) {
+  if(!leaps || time(NULL) >= leap_expiration) {
     iers_leap_entry *update = load_leaps_async(&expiration);
-    iers_leap_entry *obsolete;
+    iers_leap_entry *obsolete = leaps;
 
-    if(!update)
-      return novas_error(-1, errno, fn, "Could not update leap seconds list");
-
-    obsolete = leaps;
+    // TODO mutex
     leaps = update;
     leap_expiration = (time_t) expiration;
+    // ---
 
-    destroy_leap_list(obsolete);
+    if(obsolete)
+      destroy_leap_list(obsolete);
   }
 
   if(!leaps)
-    return novas_error(-1, errno, fn, "Could not obtain current leap seconds list");
+    return novas_trace(fn, -1, 0);
 
   if(t > leaps->unix_end) {
     gmtime_r(&t, &tm);
@@ -444,8 +443,6 @@ static int novas_eop_spline_interp(double jd, const novas_eop *restrict array, n
 
   int i = 0;
 
-  errno = 0;
-
   memset(eop, 0, sizeof(novas_eop));
 
   eop->leap = array[1].leap;
@@ -464,9 +461,6 @@ static int novas_eop_spline_interp(double jd, const novas_eop *restrict array, n
     eop->dut1_err += w * e->dut1_err;
     eop->lod_err += w * e->lod_err;
   }
-
-  if(errno)
-    return novas_trace("novas_eop_spline_interp", -1, 0);
 
   return 0;
 }
@@ -498,14 +492,19 @@ static void cleanup_file(iers_data_file *file) {
  */
 void novas_cleanup_eop() {
 #if !WITHOUT_CURL
+  // TODO mutex...
+  iers_leap_entry *l = leaps;
+  leaps = NULL;
+  leap_expiration = 0;
+  // ----
+  destroy_leap_list(l);
+
   cleanup_file(&finals);
   cleanup_file(&medium);
   cleanup_file(&old);
   cleanup_file(&very_old);
 #endif
 }
-
-
 
 
 /**
@@ -523,20 +522,19 @@ void novas_cleanup_eop() {
  *  1. You must have access to the `curl` library and built __SuperNOVAS__ with CURL support.
  *     Otherwise this function will return -1, with `errno` set to `ENOSYS`.
  *
- *  2. You will typically need an internet connection and the IERS server must be online and
- *     accessible (at least for the initial call). You should always check the return status
- *     of this call.
+ *  2. You will need an internet connection and the IERS server must be online and accessible (at
+ *     least for the initial call).
  *
  *  3. Obtaining values from IERS can have arbitrary latencies, and can impact performance
  *     severely. For performance critical applications, you should consider specifying the EOP
  *     values more directly, e.g. from a local file instead.
  *
- *  4. This function caches EOP data from the last online query. As such repeated calls within the
+ *  4. This function assumes that the files served from IERS remain accessible and their format
+ *     does not change over time.
+ *
+ *  5. This function caches EOP data from the last online query. As such repeated calls within the
  *     same data bracket (typically the same MJD day) will return fast and will reuse the last
  *     data obtained from the IERS.
- *
- *  5. This function assumes that the files served from IERS remain accessible and their format
- *     does not change over time.
  *
  *  6. This function uses cubic spline interpolation of the published data points.
  *
@@ -554,7 +552,7 @@ void novas_cleanup_eop() {
  * @author Attila Kovacs
  *
  * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
- * @sa novas_make_frame(), novas_set_time(), novas_set_auto_fetch_eop(), @ref earth
+ * @sa novas_fetch_current_eop(), novas_make_frame(), novas_set_time(), novas_set_auto_fetch_eop(), @ref earth
  */
 int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop) {
   static const char *fn = "novas_fetch_eop";
@@ -586,6 +584,57 @@ int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop) {
 }
 
 /**
+ * Obtains interpolated Earth Orientation Parameter data from the International Earth Rotation and
+ * Reference Systems Service (IERS) around the current system time, using the rapid service data
+ *  (`finals.all`).
+ *
+ * You should always check the return status when using this function, since the fetching of EOP
+ * values may fail for a host of different reasons.
+ *
+ * NOTES:
+ *
+ *  1. You must have access to the `curl` library and built __SuperNOVAS__ with CURL support.
+ *     Otherwise this function will return -1, with `errno` set to `ENOSYS`.
+ *
+ *  2. You will need an internet connection and the IERS server must be online and accessible (at
+ *     least for the initial call).
+ *
+ *  3. Obtaining values from IERS can have arbitrary latencies, and can impact performance
+ *     severely. For performance critical applications, you should consider specifying the EOP
+ *     values more directly, e.g. from a local file instead.
+ *
+ *  4. This function assumes that the files served from IERS remain accessible and their format
+ *     does not change over time.
+ *
+ *  5. This function caches EOP data from the last online query. As such repeated calls within the
+ *     same data bracket (typically the same MJD day) will return fast and will reuse the last
+ *     data obtained from the IERS.
+ *
+ *  6. This function uses cubic spline interpolation of the published data points.
+ *
+ *  7. The returned EOP values are assumed to be ITRF 2020 values, which is appropriate
+ *     at the time this __SuperNOVAS__ module was written or last updated. If IERS later publishes
+ *     data in some other future ITRF realization, this module may need to be updated, accordingly.
+ *     However, the ITRF realization is unlikely to matter significantly.
+ *
+ * @param t               [s] UNIX time (seconds since 0 UTC 1 Jan 1970).
+ * @param timeout_millis  [ms] HTTP connection timeout, or &lt;=0 to leave unchanged.
+ * @param[out] eop        Output EOP data structure to populate
+ * @return                0 if successful or else -1 (errno will indicate the type of error).
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ *
+ * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
+ * @sa novas_make_frame(), novas_set_time(), novas_set_auto_fetch_eop(), @ref earth
+ */
+int novas_fetch_eop_unix(time_t t, long timeout_millis, novas_eop *eop) {
+  double jd = NOVAS_JD_J2000 + (t - UNIX_SECONDS_0UTC_1JAN2000) / 86400.0;
+  prop_error("novas_fetch_eop_unix", novas_fetch_eop(jd, timeout_millis, eop), 0);
+  return 0;
+}
+
+/**
  * Disable or Re-enabled the automatic fetching of Earth Orientation Parameter values from
  * IERS, when these are left undefined (NAN) when initializing astrometric time or observing
  * frame instances.
@@ -614,10 +663,15 @@ int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop) {
  * @sa novas_set_time(), novas_make_frame()
  * @sa Time, Frame, GeodeticObserver, CalendarDate::to_time()
  */
-void novas_set_auto_fetch_eop(int enabled) {
+int novas_set_auto_fetch_eop(int enabled) {
 #if !WITHOUT_CURL
   auto_fetch_eop = (enabled != 0);
+
+#else
+  if(enabled)
+    return novas_error(-1, ENOSYS, "novas_set_auto_fetch_eop", "SuperNOVAS was compiled without cURL support.");
 #endif
+  return 0;
 }
 
 /**

@@ -41,6 +41,10 @@ foreach(TEST ${TEST_PROGRAMS})
         
         # Link against the supernovas library
         target_link_libraries(${TEST} PRIVATE core)
+        
+        if(NOT HAS_CURL)
+            target_compile_definitions(${TEST} PRIVATE WITHOUT_CURL=1)
+        endif()
 
         # Special handling for CALCEPH example
         if(${TEST} STREQUAL "test-calceph")

@@ -5520,7 +5520,6 @@ static int test_equals_orbsys() {
   return n;
 }
 
-
 static int test_equals_orbital() {
   int n = 0;
   novas_orbital_system sys = NOVAS_ORBITAL_SYSTEM_INIT;
@@ -5587,7 +5586,6 @@ static int test_equals_orbital() {
 
   return n;
 }
-
 
 static int test_equals_object() {
   int n = 0;
@@ -5748,6 +5746,90 @@ static int test_equals_frame() {
 
   b = a; b.dy = -200.0;
   if(!is_ok("equals_frame:earth:dy:!nan", novas_equals_frame(&a, &b) != 0)) n++;
+
+  return n;
+}
+
+static int test_fetch_eop() {
+  int n = 0;
+  novas_eop eop = {};
+
+#if !WITHOUT_CURL
+  if(!is_ok("fetch_eop_unix:now", novas_fetch_eop_unix(time(NULL), 0, &eop))) n++;
+
+  if(!is_ok("fetch_eop:j2000", novas_fetch_eop(NOVAS_JD_J2000, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:j2000:leap", eop.leap, 32, 1e-15)) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:j2000+:reuse", novas_fetch_eop(NOVAS_JD_J2000 + 0.1, 0, &eop))) n++;
+
+  if(!is_ok("fetch_eop:b1950", novas_fetch_eop(NOVAS_JD_B1950, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:b1950:leap", eop.leap, 0, 1e-15)) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:b1900", novas_fetch_eop(NOVAS_JD_B1900, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:b1900:leap", eop.leap, 0, 1e-15)) n++;
+  if(!is_ok("fetch_eop:b1900:dut1", !isnan(eop.dut1))) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:j1962", novas_fetch_eop(NOVAS_JD_MJD0 + 37666, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:j1962:leap", eop.leap, 0, 1e-15)) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:j1961", novas_fetch_eop(NOVAS_JD_MJD0 + 37664, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:j1961:leap", eop.leap, 0, 1e-15)) n++;
+  if(!is_ok("fetch_eop:j1964:dut1", isnan(eop.dut1))) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:j1989", novas_fetch_eop(NOVAS_JD_MJD0 + 11366, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:j1889:leap", eop.leap, 0, 1e-15)) n++;
+  if(!is_ok("fetch_eop:j1889:dut1", !isnan(eop.dut1))) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:timeout", novas_fetch_eop(NOVAS_JD_HIP, 5, &eop))) n++;
+#endif
+
+  novas_cleanup_eop();
+
+  return n;
+}
+
+static int test_auto_fetch_eop() {
+  int n = 0;
+
+#if !WITHOUT_CURL
+  observer obs = {};
+  novas_timespec ts = {};
+  novas_frame frame = {};
+
+  if(!is_ok("auto_fetch_eop:time", novas_set_time(NOVAS_UTC, NOVAS_JD_J2000, 0, NAN, &ts))) n++;
+  if(!is_equal("auto_fetch_eop:time:leap", novas_time_leap(&ts), 32, 1e-15)) n++;
+
+  make_observer_at_geocenter(&obs);
+  if(!is_ok("auto_fetch_eop:frame", novas_make_frame(NOVAS_REDUCED_ACCURACY, &obs, &ts, NAN, NAN, &frame))) n++;
+  if(!is_ok("auto_fetch_eop:frame:(dx,dy)", isnan(frame.dx) || isnan(frame.dy))) n++;
+
+  if(!is_ok("is_auto_fetch_eop:1", !novas_is_auto_fetch_eop())) n++;
+  if(!is_ok("set_auto_fetch_eop(0)", novas_set_auto_fetch_eop(0))) n++;
+  if(!is_ok("is_auto_fetch_eop:0", novas_is_auto_fetch_eop())) n++;
+
+  if(!is_ok("auto_fetch_eop(0):time", novas_set_time(NOVAS_UTC, NOVAS_JD_J2000, 0, NAN, &ts))) n++;
+  if(!is_ok("auto_fetch_eop(0):dut1", !isnan(ts.dut1))) n++;
+
+  novas_set_time(NOVAS_UTC, NOVAS_JD_J2000, 32, 0.0, &ts);
+  if(!is_ok("auto_fetch_eop(0):frame", novas_make_frame(NOVAS_REDUCED_ACCURACY, &obs, &ts, NAN, NAN, &frame))) n++;
+  if(!is_ok("auto_fetch_eop(0):frame:dx", !isnan(frame.dx))) n++;
+  if(!is_ok("auto_fetch_eop(0):frame:dy", !isnan(frame.dy))) n++;
+
+  if(!is_ok("set_auto_fetch_eop(1)", novas_set_auto_fetch_eop(1))) n++;
+  if(!is_ok("is_auto_fetch_eop:1:again", !novas_is_auto_fetch_eop())) n++;
+#else
+  if(!is_ok("is_auto_fetch_eop:0", novas_is_auto_fetch_eop())) n++;
+  if(!is_ok("set_auto_fetch_eop(0)", novas_set_auto_fetch_eop(0))) n++;
+  if(!is_ok("is_auto_fetch_eop:0", novas_is_auto_fetch_eop())) n++;
+#endif
+
+  novas_cleanup_eop();
 
   return n;
 }
@@ -5939,6 +6021,9 @@ int main(int argc, char *argv[]) {
   if(test_equals_sky_pos()) n++;
   if(test_equals_planet_bundle()) n++;
   if(test_equals_frame()) n++;
+
+  if(test_fetch_eop()) n++;
+  if(test_auto_fetch_eop()) n++;
 
   n += test_dates();
 
