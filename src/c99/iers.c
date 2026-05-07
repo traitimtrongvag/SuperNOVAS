@@ -8,11 +8,12 @@
  *  and Reference Systems Service (IERS) via HTTPS.
  */
 
-#if !defined(_MSC_VER) && __STDC_VERSION__ < 201112L
-#  define _POSIX_C_SOURCE 200112L   ///< gmtime_r
+#if !defined(_MSC_VER)
+#  define _GNU_SOURCE               ///< fmemopen (before glibc 2.10)
 #endif
 
 
+#include <stdio.h>
 #include <stdlib.h>   // atexit()
 #include <string.h>
 #include <time.h>
@@ -32,20 +33,39 @@
 #define UNIX_SECONDS_0UTC_1JAN2000  946684800L    ///< [s] UNIX time at J2000.0
 /// \endcond
 
-#if !WITHOUT_CURL
-
-#if SKIP_IERS_DNS_LOOKUP
-#  define IERS_DATACENTER         "141.74.67.212"       ///< datacenter.iers.org
-#  define HPIERS                  "145.238.80.89"       ///< hpiers.obspm.fr
-#else
-#  define IERS_DATACENTER         "datacenter.iers.org" ///< IERS EOP server name
-#  define HPIERS                  "hpiers.obspm.fr"     ///< IERS leap seconds server name
-#endif
-
 /// \cond PRIVATE
+
+#  if SKIP_IERS_DNS_LOOKUP
+#    define IERS_DATACENTER         "141.74.67.212"       ///< datacenter.iers.org
+#    define HPIERS                  "145.238.80.89"       ///< hpiers.obspm.fr
+#  else
+#    define IERS_DATACENTER         "datacenter.iers.org" ///< IERS EOP server name
+#    define HPIERS                  "hpiers.obspm.fr"     ///< IERS leap seconds server name
+#  endif
+
 #define LEAP_FILENAME               "leap-seconds.list"
 #define LEAP_URL                    "https://" HPIERS "/iers/bul/bulc/ntp/" LEAP_FILENAME
 #define NTP_UNIX_EPOCH              2208988800LL  ///< [s] NTP timestamp of UNIX epoch (1970 Jan 1)
+
+/**
+ * A individual leap seconds entry in a linked list of leap seconds
+ *
+ */
+typedef struct iers_leap_entry {
+  int unix_start;   ///< [day] Julian date leap was introduced
+  int unix_end;     ///< [day] Julian date to which leap is valid
+  int leap;         ///< [s] Leap seconds (TAI - UTC time difference)
+  struct iers_leap_entry *next;   ///< Link to the next leap entry in list.
+} iers_leap_entry;
+
+/// \endcond
+
+static iers_leap_entry *leaps;    ///< Leap seconds list
+static time_t leap_expiration;    ///< UNIX time at which leap seconds list expires.
+
+// ---------------------------------------------------------------------------
+#if !WITHOUT_CURL
+/// \cond PRIVATE
 
 /**
  * IERS data file structural description.
@@ -69,17 +89,6 @@ typedef struct {
 } iers_data_file;
 
 /**
- * A individual leap seconds entry in a linked list of leap seconds
- *
- */
-typedef struct iers_leap_entry {
-  int unix_start;   ///< [day] Julian date leap was introduced
-  int unix_end;     ///< [day] Julian date to which leap is valid
-  int leap;         ///< [s] Leap seconds (TAI - UTC time difference)
-  struct iers_leap_entry *next;   ///< Link to the next leap entry in list.
-} iers_leap_entry;
-
-/**
  * A simple data buffer for downloading data chunks from IERS
  */
 typedef struct {
@@ -87,9 +96,6 @@ typedef struct {
   size_t capacity;    ///< Capacity of byte buffer
   size_t size;        ///< Number of bytes filled
 } download_buffer;
-
-static iers_leap_entry *leaps;    ///< Leap seconds list
-static time_t leap_expiration;    ///< UNIX time at which leap seconds list expires.
 
 // 1973.01.02 to +365 days, no head
 static iers_data_file finals = { NULL,
@@ -119,14 +125,84 @@ static iers_data_file very_old = { NULL,
         0, 12, 71, 22, 83, 32, 93, 226, 281
 };
 
-#if WITHOUT_CURL
-static int auto_fetch_eop = 0;    /// Disable fetching EOP from IERS as needed by default
-#else
 static int auto_fetch_eop = 1;    /// Enable fetching EOP from IERS as needed by default
-#endif
 
 /// \endcond
+#endif /* !WITHOUT_CURL */
+// ---------------------------------------------------------------------------
 
+static void destroy_leap_list(iers_leap_entry *list) {
+  while(list) {
+    iers_leap_entry *e = list;
+    list = e->next;
+    free(e);
+  }
+}
+
+void set_leap_list(iers_leap_entry *list, long long expiration) {
+  // TODO mutex
+  iers_leap_entry *obsolete = leaps;
+  leaps = list;
+  leap_expiration = expiration;
+  // ---
+  destroy_leap_list(obsolete);
+}
+
+static iers_leap_entry *parse_leap_file(FILE *fp, long long *expiration) {
+  static const char *fn = "parse_leap_file";
+
+  iers_leap_entry *list = NULL;
+  char line[256] = {'\0'};
+
+  if(fseek(fp, 0, SEEK_SET) != 0) {
+    novas_set_errno(errno, fn, "fseek() failed: %s", strerror(errno));
+    return NULL;
+  }
+
+  // Parse leap-seconds.list data
+  while(fgets(line, sizeof(line) - 1, fp) != NULL) if(line[0]) {
+    // Process expiration timestamp
+    if(line[0] == '#') {
+      if(line[1] == '@') {
+        if(sscanf(&line[2], "%lld", expiration) < 1) {
+          novas_set_errno(errno, fn, "could not parse leap-seconds.list expiration time.");
+          return NULL;
+        }
+      }
+    }
+    else {
+      // Add leap entry to list
+      iers_leap_entry *e = (iers_leap_entry *) calloc(1, sizeof(iers_leap_entry));
+      long long start = 0LL;
+
+      if(!e) {
+        destroy_leap_list(list);
+        novas_set_errno(errno, fn, "leap entry alloc error: %s", strerror(errno));
+        return NULL;
+      }
+
+      // Parse start time and leap seconds value
+      if(sscanf(line, "%lld %d", &start, &e->leap) < 2) {
+        destroy_leap_list(list);
+        novas_set_errno(errno, fn, "invalid leap-seconds.list entry: %s", line);
+        return NULL;
+      }
+
+      // Prepend to head of list.
+      e->unix_start = (time_t) (start - NTP_UNIX_EPOCH);
+      e->unix_end = (time_t) (*expiration - NTP_UNIX_EPOCH);
+      e->next = list;
+      if(e->next)
+        e->next->unix_end = e->unix_start;
+      list = e;
+    }
+  }
+
+  return list;
+}
+
+// ---------------------------------------------------------------------------
+#if !WITHOUT_CURL
 
 static size_t write_to_buffer(const char *ptr, size_t size, size_t nmemb, void *userdata) {
   download_buffer *data = (download_buffer *) userdata;
@@ -163,25 +239,15 @@ static CURL *init_curl() {
   return curl;
 }
 
-static void destroy_leap_list(iers_leap_entry *list) {
-  while(list) {
-    iers_leap_entry *e = list;
-    list = e->next;
-    free(e);
-  }
-}
-
-
-// TODO use mutex
-static iers_leap_entry *load_leaps_async(long long *expiration) {
-  static const char *fn = "load_leaps_async()";
+static iers_leap_entry *fetch_leaps_async(long long *expiration) {
+  static const char *fn = "fetch_leaps_async()";
 
   CURL *curl = NULL;
   CURLcode res;
   char str[32768];
   download_buffer data = { str, sizeof(str), 0 };
-  size_t offset = 0;
-  iers_leap_entry *list = NULL;
+  FILE *fp;
+  iers_leap_entry *list;
 
   curl = init_curl();
   if (!curl) {
@@ -200,96 +266,14 @@ static iers_leap_entry *load_leaps_async(long long *expiration) {
     return NULL;
   }
 
-  // Parse leap-seconds.list data
-  while(offset < data.size) {
-    size_t from = offset;
+  fp = fmemopen(str, data.size, "r");
+  list = parse_leap_file(fp, expiration);
+  fclose(fp);
 
-    // Read one line (up to 80-chars)
-    for(;;) {
-      char c = str[offset++];
-      if(c == '\0' || c == '\n')
-        break;
-    }
-
-    // Process expiration timestamp
-    if(str[from] == '#') {
-      if(str[from + 1] == '@') {
-        if(sscanf(&str[from + 2], "%lld", expiration) < 1) {
-          novas_set_errno(errno, fn, "could not parse leap-seconds.list expiration time.");
-          return NULL;
-        }
-      }
-    }
-    else {
-      // Add leap entry to list
-      iers_leap_entry *e = (iers_leap_entry *) calloc(1, sizeof(iers_leap_entry));
-      long long start = 0LL;
-
-      if(!e) {
-        destroy_leap_list(list);
-        novas_set_errno(errno, fn, "leap entry alloc error: %s", strerror(errno));
-        return NULL;
-      }
-
-      // Parse start time and leap seconds value
-      if(sscanf(&str[from], "%lld %d", &start, &e->leap) < 2) {
-        char line[80] = {'\0'};
-        memcpy(line, &str[from], sizeof(line) - 1);
-        destroy_leap_list(list);
-        novas_set_errno(errno, fn, "invalid leap-seconds.list entry: %s", line);
-        return NULL;
-      }
-
-      // Prepend to head of list.
-      e->unix_start = (time_t) (start - NTP_UNIX_EPOCH);
-      e->unix_end = (time_t) (*expiration - NTP_UNIX_EPOCH);
-      e->next = list;
-      if(e->next)
-        e->next->unix_end = e->unix_start;
-      list = e;
-    }
-  }
+  if(!list)
+    novas_trace_invalid(fn);
 
   return list;
-}
-
-static int novas_lookup_leap(time_t t) {
-  static const char *fn = "novas_lookup_leap";
-
-  const iers_leap_entry *e;
-  struct tm tm = {};
-  char str[40] = {'\0'};
-  long long expiration = 0LL;
-
-  if(!leaps || time(NULL) >= leap_expiration) {
-    iers_leap_entry *update = load_leaps_async(&expiration);
-    iers_leap_entry *obsolete = leaps;
-
-    // TODO mutex
-    leaps = update;
-    leap_expiration = (time_t) expiration;
-    // ---
-
-    if(obsolete)
-      destroy_leap_list(obsolete);
-  }
-
-  if(!leaps)
-    return novas_trace(fn, -1, 0);
-
-  if(t > leaps->unix_end) {
-    gmtime_r(&t, &tm);
-    strftime(str, sizeof(str), "%c", &tm);
-    return novas_error(-1, ERANGE, fn, "Time %s is beyond the leap seconds coverage range", str);
-  }
-
-  for(e = leaps; e != NULL; e = e->next)
-    if(t >= e->unix_start && t < e->unix_end)
-      return e->leap;
-
-  gmtime_r(&t, &tm);
-  strftime(str, sizeof(str), "%c", &tm);
-  return 0;
 }
 
 static int novas_fetch_eop_chunk(CURL **restrict pCurl, const char *restrict url, long offset, int len, download_buffer *restrict data,
@@ -379,8 +363,8 @@ static int eop_parse_line(const iers_data_file *restrict file, int line, char *s
   return 0;
 }
 
-static int novas_fetch_from_file(iers_data_file *restrict file, double jd, novas_eop *restrict eop, int n, long timeout_millis) {
-  static const char *fn = "novas_fetch_from_file";
+static int novas_fetch_eop_from_file(iers_data_file *restrict file, double jd, novas_eop *restrict eop, int n, long timeout_millis) {
+  static const char *fn = "novas_fetch_eop_from_file";
 
   long offset;
   char lines[2048] = {'\0'};
@@ -414,16 +398,16 @@ static int novas_fetch_eop_array(double jd, long timeout_millis, novas_eop *rest
 
   if(jd >= (finals.jd_start + m * finals.jd_step) && mjd <= mjd_now + 365 - n) {
     // up to a year ahead...
-    prop_error(fn, novas_fetch_from_file(&finals, jd - m * finals.jd_step, eop, n, timeout_millis), 0);
+    prop_error(fn, novas_fetch_eop_from_file(&finals, jd - m * finals.jd_step, eop, n, timeout_millis), 0);
   }
   else if(jd >= medium.jd_start + m * medium.jd_step) {
-    prop_error(fn, novas_fetch_from_file(&medium, jd - m * medium.jd_step, eop, n, timeout_millis), 0);
+    prop_error(fn, novas_fetch_eop_from_file(&medium, jd - m * medium.jd_step, eop, n, timeout_millis), 0);
   }
   else if(jd >= old.jd_start + m * old.jd_step) {
-    prop_error(fn, novas_fetch_from_file(&old, jd - m * old.jd_step, eop, n, timeout_millis), 0);
+    prop_error(fn, novas_fetch_eop_from_file(&old, jd - m * old.jd_step, eop, n, timeout_millis), 0);
   }
   else if(jd >= very_old.jd_start + m * very_old.jd_step) {
-    prop_error(fn, novas_fetch_from_file(&very_old, jd - m * very_old.jd_step, eop, n, timeout_millis), 0);
+    prop_error(fn, novas_fetch_eop_from_file(&very_old, jd - m * very_old.jd_step, eop, n, timeout_millis), 0);
   }
   else {
     memset(eop, 0, sizeof(novas_eop));
@@ -472,40 +456,122 @@ static void cleanup_file(iers_data_file *file) {
     return;
 
   file->curl = NULL;
-
   curl_easy_cleanup(curl);
-  //free(curl);
 }
 
-#endif
+#endif /* !WITHOUT_CURL */
+// ---------------------------------------------------------------------------
 
 /**
- * Releases resources used by URL handles used for obtaining Earth Orientation Parameter (EOP)
- * data from the International Earth Rotation and Reference Systems Service (IERS). This function
- * is automatically called at normal program exit, but users may call it explicitly to clean
- * up the tiny bit of resources used at any time.
+ * Specifies a local file containing the official leap seconds list, i.e. `leap-seconds.list`, to
+ * use, at least until its expiry. (If the local leap file expires, a new one will be fetched from
+ * IERS as needed).
+ *
+ * @param leap_file     Local `leap-seconds.list` file (as obtained from IERS or a mirror). It is
+ *                      typically included in the `tzdata` package on Linux, where it may be found
+ *                      as `/usr/share/zoneinfo/leap-seconds.list` typically.
+ * @return              0 if successful, or else -1 if there was an error (errno will indicate the
+ *                      type of error).
  *
  * @since 1.7
  * @author Attila Kovacs
  *
- * @sa novas_fetch_eop()
+ * @sa https://hpiers.obspm.fr/iers/bul/bulc/ntp/leap-seconds.list
+ * @sa novas_lookup_leap(), novas_fetch_eop(), novas_cleanup_eop()
+ */
+int novas_set_leap_list(FILE *leap_file) {
+  static const char *fn = "novas_set_leap_list";
+
+  iers_leap_entry *list;
+  long long expiration = 0LL;
+
+  if(!leap_file)
+    return novas_error(-1, EINVAL, fn, "input leap seconds file is NULL");
+
+  list = parse_leap_file(leap_file, &expiration);
+  if(!list)
+    return novas_trace(fn, -1, 0);
+
+  set_leap_list(list, expiration);
+  return 0;
+}
+
+/**
+ * Returns the leap seconds for the given UNIX timestamp, based either on a locally supplied leap
+ * seconds list (see `novas_set_leap_list()), or else from data obtained as needed from IERS. In
+ * case of errors -1 is returned, with errno set as appropriate.
+ *
+ * While -1 is leap seconds is theoretically possible also, it is unlikely to ever be a real value,
+ * due to the generally slowing rotation rate of Earth. If you want to be pedantic, you should set
+ * `errno` to 0 prior to this call, and then check `errno` immediately after the call for a less
+ * ambiguous error detection method than simply looking for -1 as the return value.
+ *
+ * Leap seconds were first introduced on 1 Jan 1972. Thus for date preceding the introduction,
+ * 0 is returned. Leap seconds prognosis into the future is available only up to the expiration
+ * date of the `leap-seconds.list` file (as supplied or updated from IERS).
+ *
+ * @param t     [s] UNIX time (seconds since 0 UTC, 1 Jan 1970)
+ * @return      The leap seconds for the given time, or -1 if there was an error (errno will
+ *              indicate the type of error).
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ *
+ * @sa novas_set_leap_list(), novas_fetch_eop()
+ */
+int novas_lookup_leap(time_t t) {
+  static const char *fn = "novas_lookup_leap";
+
+  const iers_leap_entry *e;
+  char str[40] = {'\0'};
+  long long expiration = 0LL;
+
+  if(!leaps || (t >= leap_expiration && time(NULL) >= leap_expiration)) {
+#if WITHOUT_CURL
+    return novas_error(-1, ERANGE, fn, "no leap data available for time %lld", (long long) t);
+#else
+    iers_leap_entry *update = fetch_leaps_async(&expiration);
+    set_leap_list(update, expiration);
+#endif
+  }
+
+  if(!leaps)
+    return novas_trace(fn, -1, 0);
+
+  if(t > leaps->unix_end) {
+    strftime(str, sizeof(str), "%c", gmtime(&t));
+    return novas_error(-1, ERANGE, fn, "Time %s is beyond the leap seconds coverage range", str);
+  }
+
+  for(e = leaps; e != NULL; e = e->next)
+    if(t >= e->unix_start && t < e->unix_end)
+      return e->leap;
+
+  return 0;
+}
+
+/**
+ * Releases resources used by URL handles used for obtaining Earth Orientation Parameter (EOP)
+ * data from the International Earth Rotation and Reference Systems Service (IERS), including
+ * the leap seconds list supplied earlier or obtained from IERS. This function is automatically
+ * called at normal program exit, but users may call it explicitly to clean up the tiny bit of
+ * resources used at any time.
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ *
+ * @sa novas_set_leap_list(), novas_fetch_eop()
  */
 void novas_cleanup_eop() {
-#if !WITHOUT_CURL
-  // TODO mutex...
-  iers_leap_entry *l = leaps;
-  leaps = NULL;
-  leap_expiration = 0;
-  // ----
-  destroy_leap_list(l);
+  set_leap_list(NULL, 0LL);
 
+#if !WITHOUT_CURL
   cleanup_file(&finals);
   cleanup_file(&medium);
   cleanup_file(&old);
   cleanup_file(&very_old);
 #endif
 }
-
 
 /**
  * Obtains interpolated Earth Orientation Parameter data from the International Earth Rotation and
@@ -664,12 +730,11 @@ int novas_fetch_eop_unix(time_t t, long timeout_millis, novas_eop *eop) {
  * @sa Time, Frame, GeodeticObserver, CalendarDate::to_time()
  */
 int novas_set_auto_fetch_eop(int enabled) {
-#if !WITHOUT_CURL
-  auto_fetch_eop = (enabled != 0);
-
-#else
+#if WITHOUT_CURL
   if(enabled)
     return novas_error(-1, ENOSYS, "novas_set_auto_fetch_eop", "SuperNOVAS was compiled without cURL support.");
+#else
+  auto_fetch_eop = (enabled != 0);
 #endif
   return 0;
 }

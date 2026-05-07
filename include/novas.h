@@ -22,6 +22,7 @@
 #define _NOVAS_
 
 #include <math.h>   // for sin, cos
+#include <stdio.h>  // FILE
 #include <stdlib.h> // NULL
 #include <stdint.h>
 #include <time.h>
@@ -65,7 +66,6 @@
 // compiler options
 //
 #ifdef COMPAT
-#  include <stdio.h>
 #  include <ctype.h>
 #  include <string.h>
 
@@ -3478,6 +3478,12 @@ int novas_set_auto_fetch_eop(int enabled);
 
 /// @ingroup earth
 int novas_is_auto_fetch_eop();
+
+/// @ingroup earth
+int novas_set_leap_list(FILE *leap_file);
+
+/// @ingroup earth
+int novas_lookup_leap(time_t t);
 
 
 
