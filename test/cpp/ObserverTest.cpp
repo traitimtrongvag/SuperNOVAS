@@ -76,7 +76,7 @@ int main() {
           "GeodeticObserver at Site (W 114d 35m 29.612s, N  57d 17m 44.806s, altitude 75 m)")) n++;
 
   copy = g1.copy();
-  if(!test.check("copy(on_earth)", memcmp(copy->_novas_observer(), g1._novas_observer(), sizeof(observer)) == 0)) n++;
+  if(!test.check("copy(on_earth)", novas_equals_observer(copy->_novas_observer(), g1._novas_observer()))) n++;
   delete copy;
 
   EOP e = g1.eop_at(app.frame().time());
@@ -118,7 +118,7 @@ int main() {
           "GeodeticObserver at Site (W 114d 35m 29.612s, N  57d 17m 44.806s, altitude 75 m) moving at ENU Velocity (0.002 km/s, 0.000 km/s, 0.003 km/s)")) n++;
 
   copy = g2.copy();
-  if(!test.check("copy(moving)", memcmp(copy->_novas_observer(), g2._novas_observer(), sizeof(observer)) == 0)) n++;
+  if(!test.check("copy(moving)", novas_equals_observer(copy->_novas_observer(), g2._novas_observer()))) n++;
   delete copy;
 
 
@@ -144,7 +144,7 @@ int main() {
 
 
   copy = gc.copy();
-  if(!test.check("copy(gc)", memcmp(copy->_novas_observer(), gc._novas_observer(), sizeof(observer)) == 0)) n++;
+  if(!test.check("copy(gc)", novas_equals_observer(copy->_novas_observer(), gc._novas_observer()))) n++;
   delete copy;
 
   o = gc._novas_observer();
@@ -174,7 +174,7 @@ int main() {
   if(!test.check("_novas_observer(orbit)", o != NULL && o->where == NOVAS_OBSERVER_IN_EARTH_ORBIT)) n++;
 
   copy = o1.copy();
-  if(!test.check("copy(orbit)", memcmp(copy->_novas_observer(), o1._novas_observer(), sizeof(observer)) == 0)) n++;
+  if(!test.check("copy(orbit)", novas_equals_observer(copy->_novas_observer(), o1._novas_observer()))) n++;
   delete copy;
 
   test = TestUtil("SolarSystemObserver");
@@ -213,7 +213,7 @@ int main() {
   if(!test.check("_novas_observer(ss)", o != NULL && o->where == NOVAS_SOLAR_SYSTEM_OBSERVER)) n++;
 
   copy = s1.copy();
-  if(!test.check("copy(ss)", memcmp(copy->_novas_observer(), s1._novas_observer(), sizeof(observer)) == 0)) n++;
+  if(!test.check("copy(ss)", novas_equals_observer(copy->_novas_observer(), s1._novas_observer()))) n++;
   delete copy;
 
   std::cout << "Observer.cpp: " << (n > 0 ? "FAILED" : "OK") << "\n";

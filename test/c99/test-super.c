@@ -1903,7 +1903,7 @@ static int test_make_cat_object() {
   make_cat_entry("test", "FK4", 123, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, &star);
 
   if(!is_ok("make_cat_object", make_cat_object(&star, &source))) return 1;
-  if(!is_ok("make_cat_object:check", memcmp(&source.star, &star, sizeof(star)))) return 1;
+  if(!is_ok("make_cat_object:check", !novas_equals_cat_entry(&source.star, &star))) return 1;
   return 0;
 }
 
@@ -1917,8 +1917,8 @@ static int test_airborne_observer() {
   if(!is_ok("airborne_observer:make_on_surface", make_on_surface(1.0, 2.0, 3.0, 4.0, 5.0, &loc))) return 1;
 
   if(!is_ok("airborne_observer:make", make_airborne_observer(&loc, vel, &obs))) return 1;
-  if(!is_ok("airborne_observer:check:on_surf", memcmp(&obs.on_surf, &loc, sizeof(loc)))) return 1;
-  if(!is_ok("airborne_observer:check:vel", memcmp(&obs.near_earth.sc_vel, &vel, sizeof(vel)))) return 1;
+  if(!is_ok("airborne_observer:check:on_surf", !novas_equals_on_surface(&obs.on_surf, &loc))) return 1;
+  if(!is_ok("airborne_observer:check:vel", !novas_equals_vector(obs.near_earth.sc_vel, vel, 1e-6))) return 1;
 
   if(!is_ok("airborne_observer:make_observer_at_geocenter", make_observer_at_geocenter(&gc))) return 1;
   if(!is_ok("airborne_observer:geo_posvel:gc", geo_posvel(tdb, ut12tt, NOVAS_REDUCED_ACCURACY, &gc, epos, evel))) return 1;
@@ -1945,8 +1945,8 @@ static int test_solar_system_observer() {
   int i;
 
   if(!is_ok("solar_system_observer:make", make_solar_system_observer(pos, vel, &obs))) return 1;
-  if(!is_ok("solar_system_observer:check:pos", memcmp(&obs.near_earth.sc_pos, &pos, sizeof(pos)))) return 1;
-  if(!is_ok("solar_system_observer:check:vel", memcmp(&obs.near_earth.sc_vel, &vel, sizeof(vel)))) return 1;
+  if(!is_ok("solar_system_observer:check:pos", !novas_equals_vector(obs.near_earth.sc_pos, pos, 1e-3 / NOVAS_AU))) return 1;
+  if(!is_ok("solar_system_observer:check:vel", !novas_equals_vector(obs.near_earth.sc_vel, vel, 1e2 / NOVAS_AU))) return 1;
 
   if(!is_ok("solar_system_observer:make_observer_at_geocenter", make_observer_at_geocenter(&gc))) return 1;
   if(!is_ok("solar_system_observer:obs_posvel", obs_posvel(tdb, ut12tt, NOVAS_REDUCED_ACCURACY, &obs, NULL, NULL, opos, ovel))) return 1;
@@ -2370,8 +2370,8 @@ static int test_make_frame() {
 
   if(!is_ok("make_frame", novas_make_frame(NOVAS_REDUCED_ACCURACY, &obs, &ts, 1.0, 2.0, &frame))) return 1;
 
-  if(!is_ok("make_frame:time", memcmp(&frame.time, &ts, sizeof(ts)))) return 1;
-  if(!is_ok("make_frame:obs", memcmp(&frame.observer, &obs, sizeof(obs)))) return 1;
+  if(!is_ok("make_frame:time", !novas_equals_timespec(&frame.time, &ts))) return 1;
+  if(!is_ok("make_frame:obs", !novas_equals_observer(&frame.observer, &obs))) return 1;
   if(!is_ok("make_frame:dx", frame.dx != 1.0)) return 1;
   if(!is_ok("make_frame:dy", frame.dy != 2.0)) return 1;
 
@@ -2390,10 +2390,10 @@ static int test_change_observer() {
 
   make_observer_on_surface(1.0, 2.0, 3.0, 4.0, 1001.0, &obs);
   if(!is_ok("change_observer", novas_change_observer(&frame, &obs, &out))) return 1;
-  if(!is_ok("change_observer:check", memcmp(&out.observer, &obs, sizeof(obs)))) return 1;
+  if(!is_ok("change_observer:check", !novas_equals_observer(&out.observer, &obs))) return 1;
 
   if(!is_ok("change_observer:same", novas_change_observer(&frame, &obs, &frame))) return 1;
-  if(!is_ok("change_observer:same:check", memcmp(&frame.observer, &obs, sizeof(obs)))) return 1;
+  if(!is_ok("change_observer:same:check", !novas_equals_observer(&frame.observer, &obs))) return 1;
 
   return 0;
 }

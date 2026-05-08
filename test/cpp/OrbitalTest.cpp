@@ -310,13 +310,13 @@ int main() {
   Orbital m = Orbital::moon_orbit_at(Time::b1950());
   if(!test.check("moon_orbit_at(time invalid)", !Orbital::moon_orbit_at(Time::undefined()).is_valid())) n++;
   if(!test.check("moon_orbit_at()", m.is_valid())) n++;
-  if(!test.check("moon_orbit_at() ==", memcmp(m._novas_orbital(), &mo, sizeof(novas_orbital)) == 0)) n++;
+  if(!test.check("moon_orbit_at() ==", novas_equals_orbital(m._novas_orbital(), &mo))) n++;
 
   novas_make_moon_mean_orbit(Time::b1950().jd(NOVAS_TDB), &mo);
   m = Orbital::moon_mean_orbit_at(Time::b1950());
   if(!test.check("moon_mean_orbit_at(time invalid)", !Orbital::moon_mean_orbit_at(Time::undefined()).is_valid())) n++;
   if(!test.check("moon_mean_orbit_at()", m.is_valid())) n++;
-  if(!test.check("moon_mean_orbit_at() ==", memcmp(m._novas_orbital(), &mo, sizeof(novas_orbital)) == 0)) n++;
+  if(!test.check("moon_mean_orbit_at() ==", novas_equals_orbital(m._novas_orbital(), &mo))) n++;
 
 
   std::cout << "Orbital.cpp: " << (n > 0 ? "FAILED" : "OK") << "\n";

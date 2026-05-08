@@ -29,12 +29,12 @@ int main() {
   CatalogSource c(ce);
 
   const Source *c1 = c.copy();
-  if(!test.check("copy()", memcmp(c1->_novas_object(), c._novas_object(), sizeof(object)) == 0)) n++;
+  if(!test.check("copy()", novas_equals_object(c1->_novas_object(), c._novas_object()))) n++;
 
   if(!test.check("is_valid()", c.is_valid())) n++;
   if(!test.equals("type()", c.type(), NOVAS_CATALOG_OBJECT)) n++;
   if(!test.equals("name() insensitive", c.name(), "TEST")) n++;
-  if(!test.check("catalog_entry()", memcmp(c.catalog_entry()._cat_entry(), ce._cat_entry(), sizeof(cat_entry)) == 0)) n++;
+  if(!test.check("catalog_entry()", novas_equals_cat_entry(c.catalog_entry()._cat_entry(), ce._cat_entry()))) n++;
   if(!test.equals("to_string()", c.to_string(), "CatalogSource Test @ 12h 34m 56.789s   12d 34m 56.789s ICRS")) n++;
 
 
@@ -211,9 +211,9 @@ int main() {
 
   OrbitalSource os = orb.to_source("test");
   if(!test.check("is_valid()", os.is_valid())) n++;
-  if(!test.check("copy()", memcmp(os.copy()->_novas_object(), os._novas_object(), sizeof(object)) == 0)) n++;
-  if(!test.check("_novas_orbital()", memcmp(os._novas_orbital(), orb._novas_orbital(), sizeof(novas_orbital)) == 0)) n++;
-  if(!test.check("orbital()", memcmp(os.orbital()._novas_orbital(), orb._novas_orbital(), sizeof(novas_orbital)) == 0)) n++;
+  if(!test.check("copy()", novas_equals_object(os.copy()->_novas_object(), os._novas_object()))) n++;
+  if(!test.check("_novas_orbital()", novas_equals_orbital(os._novas_orbital(), orb._novas_orbital()))) n++;
+  if(!test.check("orbital()", novas_equals_orbital(os.orbital()._novas_orbital(), orb._novas_orbital()))) n++;
   if(!test.equals("solar_illumination()", os.solar_illumination(frame), novas_solar_illum(os._novas_object(), frame._novas_frame()), 1e-9)) n++;
   if(!test.equals("solar_power()", os.solar_power(frame.time()), novas_solar_power(frame.jd(NOVAS_TDB), os._novas_object()), 1e-9)) n++;
 
@@ -229,7 +229,7 @@ int main() {
 
   EphemerisSource es = EphemerisSource("test", 123456L);
   if(!test.check("is_valid()", es.is_valid())) n++;
-  if(!test.check("copy()", memcmp(es.copy()->_novas_object(), es._novas_object(), sizeof(object)) == 0)) n++;
+  if(!test.check("copy()", novas_equals_object(es.copy()->_novas_object(), es._novas_object()))) n++;
   if(!test.equals("type()", es.type(), NOVAS_EPHEM_OBJECT)) n++;
   if(!test.equals("name()", es.name(), "test")) n++;
   if(!test.equals("number()", es.number(), 123456L)) n++;
