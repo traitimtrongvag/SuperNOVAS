@@ -305,7 +305,6 @@ int main() {
   no.node_period = -1.0 / Unit::julian_century;
   if(!test.check("from_novas_orbit(node period = OK)", Orbital::from_novas_orbit(&no).is_valid())) n++;
 
-
   novas_orbital mo = {};
   novas_make_moon_orbit(Time::b1950().jd(NOVAS_TDB), &mo);
   Orbital m = Orbital::moon_orbit_at(Time::b1950());
