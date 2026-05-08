@@ -82,9 +82,9 @@ int novas_equals_timespec(const novas_timespec *a, const novas_timespec *b) {
   if(!a || !b)
     return 0;
 
-  if(!novas_time_equals(a->ijd_tt + a->fjd_tt, b->ijd_tt + b->fjd_tt))
-    return 0;
   if(!novas_time_equals(remainder(a->fjd_tt, 1.0), remainder(b->fjd_tt, 1.0))) // [0.1 * us]
+    return 0;
+  if(!novas_time_equals(a->ijd_tt + a->fjd_tt, b->ijd_tt + b->fjd_tt))
     return 0;
   if(!novas_equals_double(a->ut1_to_tt, b->ut1_to_tt, 1e-7)) // [0.1 * us]
     return 0;
@@ -438,10 +438,13 @@ int novas_equals_object(const object *a, const object *b) {
   if(strncmp(a->name, b->name, SIZE_OF_OBJ_NAME))
     return 0;
 
+  if(a->number != b->number)
+    return 0;
+
   switch(a->type) {
     case NOVAS_PLANET:
     case NOVAS_EPHEM_OBJECT:
-      return (a->number == b->number);
+      return 1;
     case NOVAS_CATALOG_OBJECT:
       return novas_equals_cat_entry(&a->star, &b->star);
     case NOVAS_ORBITAL_OBJECT:
