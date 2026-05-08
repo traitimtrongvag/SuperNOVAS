@@ -230,7 +230,6 @@ int main() {
   EphemerisSource es = EphemerisSource("test", 123456L);
   if(!test.check("is_valid()", es.is_valid())) n++;
   if(!test.check("copy()", memcmp(es.copy()->_novas_object(), es._novas_object(), sizeof(object)) == 0)) n++;
-  if(!test.check("copy()", memcmp(es.copy()->_novas_object(), es._novas_object(), sizeof(object)) == 0)) n++;
   if(!test.equals("type()", es.type(), NOVAS_EPHEM_OBJECT)) n++;
   if(!test.equals("name()", es.name(), "test")) n++;
   if(!test.equals("number()", es.number(), 123456L)) n++;
