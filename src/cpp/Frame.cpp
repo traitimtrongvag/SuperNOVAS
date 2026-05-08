@@ -107,6 +107,55 @@ Frame& Frame::operator=(const Frame& frame) {
 }
 
 /**
+ * Checks if this observing frame is essentially the same as another, given typical tolerances. See
+ * `Observer::equals()` and `Time::equals()` for details.
+ *
+ * Note, that an observing frame may not equal itself if it contains NAN or infinite components.
+ *
+ * @param other   the other observing frame
+ * @return        `true` if this frame and the argument describe essentially the same observing
+ *                frame, within the typical tolerances.
+ *
+ * @since 1.7
+ *
+ * @sa operator==(), operator!=()
+ */
+bool Frame::equals(const Frame& other) const {
+  return (_time == other._time) && (_observer == other._observer);
+}
+
+/**
+ * Checks if this observing frame is essentially the same as another, given typical tolerances.
+ * Same as `equals()`.
+ *
+ * @param other   the other observing frame
+ * @return        `true` if this frame and the argument describe essentially the same observing
+ *                frame, within the typical tolerances.
+ *
+ * @since 1.7
+ *
+ * @sa equals(), operator!=()
+ */
+bool Frame::operator==(const Frame& other) const {
+  return equals(other);
+}
+
+/**
+ * Checks if this observing frame differes from another, given typical tolerances. Same as `!equals()`.
+ *
+ * @param other   the other observing frame
+ * @return        `true` if this frame and the argument describe essentially the same observing
+ *                frame, within the typical tolerances.
+ *
+ * @since 1.7
+ *
+ * @sa equals(), operator!=()
+ */
+bool Frame::operator!=(const Frame& other) const {
+  return !equals(other);
+}
+
+/**
  * Returns the pointer to the underlying NOVAS C `novas_frame` data structure of this observing
  * frame.
  *

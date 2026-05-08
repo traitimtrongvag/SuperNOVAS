@@ -23,15 +23,17 @@ int main() {
   Apparent app = Apparent::from_tod(1.234 * Unit::hour_angle, -23.45 * Unit::deg, Observer::at_geocenter().reduced_accuracy_frame_at(Time::b1950()));
 
   Observer x = Observer::undefined();
-  const Observer *copy;
-
   if(!test.check("undefined()", !x.is_valid())) n++;
   if(!test.equals("undefined().type", (int) x.type(), -1)) n++;
+  if(!test.check("undefined().operator==", !(x == x))) n++;
+  if(!test.check("undefined().operator!=", x != x)) n++;
   if(!test.check("undefined().to_interferometric", !x.to_interferometric(app).is_valid())) n++;
 
-  copy = x.copy();
+  const Observer *copy = x.copy();
   if(!test.check("undefined().copy()", !copy->is_valid())) n++;
   delete copy;
+
+
 
   if(!test.check("invalid Site", !Observer::on_earth(Site::undefined(), eop).is_valid())) n++;
   if(!test.check("invalid Site (moving)", !Observer::moving_on_earth(Site::undefined(), Velocity::stationary(), eop).is_valid())) n++;
@@ -57,6 +59,8 @@ int main() {
 
   GeodeticObserver gdx =  Observer::moving_on_earth(Site::undefined(), Velocity::undefined(), EOP::undefined());
   if(!test.check("is_valid(invalid)", !gdx.is_valid())) n++;
+  if(!test.check("operator==(invalid)", !(gdx == gdx))) n++;
+  if(!test.check("operator!(invalid)", gdx != gdx)) n++;
   if(!test.check("site(invalid)", !gdx.site().is_valid())) n++;
   if(!test.check("itrs_velocity(invalid)", !gdx.itrs_velocity().is_valid())) n++;
   if(!test.check("enu_velocity(invalid)", !gdx.enu_velocity().is_valid())) n++;
@@ -65,6 +69,9 @@ int main() {
   GeodeticObserver g1 = Observer::on_earth(site, eop);
   if(!test.check("is_valid(on_earth)", g1.is_valid())) n++;
   if(!test.equals("type(on_earth)", g1.type(), NOVAS_OBSERVER_ON_EARTH)) n++;
+  if(!test.check("operator==(on earth)", g1 == g1)) n++;
+  if(!test.check("operator!(on_earth)", !(g1 != g1))) n++;
+  if(!test.check("operator!(on_earth-vs-invalid)", g1 != gdx)) n++;
   if(!test.check("is_geodetic(on_earth)", g1.is_geodetic())) n++;
   if(!test.check("is_geocentric(on_earth)", !g1.is_geocentric())) n++;
   if(!test.check("site()", g1.site() == site)) n++;
@@ -76,7 +83,7 @@ int main() {
           "GeodeticObserver at Site (W 114d 35m 29.612s, N  57d 17m 44.806s, altitude 75 m)")) n++;
 
   copy = g1.copy();
-  if(!test.check("copy(on_earth)", novas_equals_observer(copy->_novas_observer(), g1._novas_observer()))) n++;
+  if(!test.check("copy(on_earth)", *copy == g1)) n++;
   delete copy;
 
   EOP e = g1.eop_at(app.frame().time());
@@ -118,7 +125,7 @@ int main() {
           "GeodeticObserver at Site (W 114d 35m 29.612s, N  57d 17m 44.806s, altitude 75 m) moving at ENU Velocity (0.002 km/s, 0.000 km/s, 0.003 km/s)")) n++;
 
   copy = g2.copy();
-  if(!test.check("copy(moving)", novas_equals_observer(copy->_novas_observer(), g2._novas_observer()))) n++;
+  if(!test.check("copy(moving)", *copy == g2)) n++;
   delete copy;
 
 
@@ -134,6 +141,9 @@ int main() {
   GeocentricObserver gc = Observer::at_geocenter();
   if(!test.check("is_valid(gc)", gc.is_valid())) n++;
   if(!test.equals("type(gc)", gc.type(), NOVAS_OBSERVER_AT_GEOCENTER)) n++;
+  if(!test.check("operator==()", gc == gc)) n++;
+  if(!test.check("operator!()", !(gc != gc))) n++;
+  if(!test.check("operator!(earth)", gc != g1)) n++;
   if(!test.check("is_geocentric(gc)", gc.is_geocentric())) n++;
   if(!test.check("is_geodetic(gc)", !gc.is_geodetic())) n++;
   if(!test.check("geocentric_position(gc)", gc.gcrs_position() == Position::origin())) n++;
@@ -144,7 +154,7 @@ int main() {
 
 
   copy = gc.copy();
-  if(!test.check("copy(gc)", novas_equals_observer(copy->_novas_observer(), gc._novas_observer()))) n++;
+  if(!test.check("copy(gc)", *copy == gc)) n++;
   delete copy;
 
   o = gc._novas_observer();
@@ -162,6 +172,9 @@ int main() {
   GeocentricObserver o1 = Observer::in_earth_orbit(p1, v1);
   if(!test.check("is_valid(orbit)", o1.is_valid())) n++;
   if(!test.equals("type(orbit)", o1.type(), NOVAS_OBSERVER_IN_EARTH_ORBIT)) n++;
+  if(!test.check("operator==()", o1 == o1)) n++;
+  if(!test.check("operator!()", !(o1 != o1))) n++;
+  if(!test.check("operator!(moving)", o1 != gc)) n++;
   if(!test.check("is_geocentric(orbit)", o1.is_geocentric())) n++;
   if(!test.check("is_geodetic(orbit)", !o1.is_geodetic())) n++;
   if(!test.check("geocentric_position(orbit)", o1.gcrs_position() == p1)) n++;
@@ -174,7 +187,7 @@ int main() {
   if(!test.check("_novas_observer(orbit)", o != NULL && o->where == NOVAS_OBSERVER_IN_EARTH_ORBIT)) n++;
 
   copy = o1.copy();
-  if(!test.check("copy(orbit)", novas_equals_observer(copy->_novas_observer(), o1._novas_observer()))) n++;
+  if(!test.check("copy(orbit)", *copy == o1)) n++;
   delete copy;
 
   test = TestUtil("SolarSystemObserver");
@@ -182,6 +195,9 @@ int main() {
   SolarSystemObserver ssb = Observer::at_ssb();
   if(!test.check("is_valid(ssb)", ssb.is_valid())) n++;
   if(!test.equals("type(ssb)", ssb.type(), NOVAS_SOLAR_SYSTEM_OBSERVER)) n++;
+  if(!test.check("operator==()", ssb == ssb)) n++;
+  if(!test.check("operator!()", !(ssb != ssb))) n++;
+  if(!test.check("operator!(moving)", ssb != gc)) n++;
   if(!test.check("is_geocentric(ssb)", !ssb.is_geocentric())) n++;
   if(!test.check("is_geodetic(ssb)", !ssb.is_geodetic())) n++;
   if(!test.check("frame_at(reduced)", ssb.frame_at(Time::j2000(), NOVAS_REDUCED_ACCURACY).is_valid())) n++;
@@ -213,7 +229,7 @@ int main() {
   if(!test.check("_novas_observer(ss)", o != NULL && o->where == NOVAS_SOLAR_SYSTEM_OBSERVER)) n++;
 
   copy = s1.copy();
-  if(!test.check("copy(ss)", novas_equals_observer(copy->_novas_observer(), s1._novas_observer()))) n++;
+  if(!test.check("copy(ss)", *copy == s1)) n++;
   delete copy;
 
   std::cout << "Observer.cpp: " << (n > 0 ? "FAILED" : "OK") << "\n";

@@ -52,7 +52,8 @@ int main() {
     if(!test.equals("for_naif_id(" + std::to_string(i) + ").novas_id()", opt.novas_id(), i)) n++;
 
     const Source *p1 = pl.copy();
-    if(!test.check("to_string(catalog)", novas_equals_object(p1->_novas_object(), pl._novas_object()))) n++;
+    if(!test.check("copy()", *p1 == pl)) n++;
+    delete p1;
   }
 
   char lstr[SIZE_OF_OBJ_NAME + 1];

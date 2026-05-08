@@ -25,12 +25,17 @@ int main() {
   if(!test.check("observer_ssb_velocity(invalid)", !x.observer_ssb_velocity().is_valid())) n++;
   if(!test.check("geometric_moon_elp2000(invalid)", !x.geometric_moon_elp2000().is_valid())) n++;
   if(!test.check("apparent_moon_elp2000(invalid)", !x.apparent_moon_elp2000().is_valid())) n++;
+  if(!test.check("operator==(invalid)", !(x == x))) n++;
+  if(!test.check("operator!=(invalid)", x != x)) n++;
+
 
   if(!test.check("invalid observer", !Frame(Observer::undefined(), Time::j2000(), (enum novas_accuracy) -1).is_valid())) n++;
   if(!test.check("invalid time", !Frame(gc, Time::undefined(), (enum novas_accuracy) -1).is_valid())) n++;
   if(!test.check("invalid accuracy", !Frame(gc, Time::j2000(), (enum novas_accuracy) -1).is_valid())) n++;
 
   Frame a = Frame::reduced_accuracy(gc, Time::j2000());
+  if(!test.check("operator==()", a == a)) n++;
+  if(!test.check("operator!=()", !(a != a))) n++;
   if(!test.equals("accuracy()", a.accuracy(), NOVAS_REDUCED_ACCURACY)) n++;
   if(!test.check("time()", a.time() == Time::j2000())) n++;
   if(!test.check("observer_ssb_position()", a.observer_ssb_position() == Position(a._novas_frame()->obs_pos, Unit::AU))) n++;
@@ -65,6 +70,7 @@ int main() {
 
   b = Frame(gc, Time::j2000(), NOVAS_FULL_ACCURACY);
   if(!test.check("Frame(full accuracy).is_valid()", !b.is_valid())) n++;
+  if(!test.check("operator!=(acc)", a != b)) n++;
 
   b = Frame(Observer::undefined(), Time::j2000());
   if(!test.check("Frame(obs invalid).is_valid()", !b.is_valid())) n++;

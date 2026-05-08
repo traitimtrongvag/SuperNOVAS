@@ -30,34 +30,42 @@ static int novas_equals_double(double a, double b, double tol) {
  * Checks if two 3D vectors are effectively the same, within the specified absolute tolerance. Two
  * NULL vectors are also considered equal.
  *
+ * Note, that a vector may not equal itself if it contains NAN or infinite components, since
+ * `NAN != NAN` and `ININITE != INFINITE`.
+ *
  * @param a       one of the vectors
  * @param b       the other vector
  * @param tol     absolute tolerance
- * @return        TRUE (1) if all components of the two vectors match within the specified
- *                tolerance, or else FALSE (0)
+ * @return        TRUE (1) if all the two vectors match within the specified tolerance, or else FALSE
+ *                (0)
  *
  * @since 1.7
  * @author Attila Kovacs
  */
 int novas_equals_vector(const double *a, const double *b, double tol) {
+  double d2 = 0.0;
   int i;
 
-  if(a == b)
+  if(!a && !b)
     return 1;
 
   if(!a || !b)
     return 0;
 
-  for(i = 0; i < 3; i++)
-    if(!novas_equals_double(a[i], b[i], tol))
-      return 0;
+  for(i = 0; i < 3; i++) {
+    double d = a[i] - b[i];
+    d2 += d * d;
+  }
 
-  return 1;
+  return d2 <= tol * tol;
 }
 
 /**
  * Checks if two time specifications are the same within 100 &mu;s. Two NULL time specifications
  * are also considered equal.
+ *
+ * Note, that a time specification may not equal itself if it contains NAN or infinite components,
+ * since `NAN != NAN` and `ININITE != INFINITE`.
  *
  * @param a   one of the time specs
  * @param b   the other time spec
@@ -68,7 +76,7 @@ int novas_equals_vector(const double *a, const double *b, double tol) {
  * @author Attila Kovacs
  */
 int novas_equals_timespec(const novas_timespec *a, const novas_timespec *b) {
-  if(a == b)
+  if(!a && !b)
     return 1;
 
   if(!a || !b)
@@ -100,6 +108,9 @@ int novas_equals_timespec(const novas_timespec *a, const novas_timespec *b) {
  *
  * In addition, two NULL structures are also considered equal.
  *
+ * Note, that a geodetic location + local weather structure may not equal itself if it contains
+ * NAN or infinite components, since `NAN != NAN` and `ININITE != INFINITE`.
+ *
  * @param a   one geodetic location (with weather)
  * @param b   another geodetic location (with weather)
  * @return    TRUE (1) if the two locations and their weather parameters match within the
@@ -111,7 +122,7 @@ int novas_equals_timespec(const novas_timespec *a, const novas_timespec *b) {
  * @sa novas_equals_observer()
  */
 int novas_equals_on_surface(const on_surface *a, const on_surface *b) {
-  if(a == b)
+  if(!a && !b)
     return 1;
 
   if(!a || !b)
@@ -138,6 +149,9 @@ int novas_equals_on_surface(const on_surface *a, const on_surface *b) {
  * near-Earth data structures are used by airborne observers or observers in Earth orbit. Two NULL
  * structures are also considered equal.
  *
+ * Note, that a near-Earth position/velocity structure may not equal itself if it contains NAN or
+ * infinite components, since `NAN != NAN` and `ININITE != INFINITE`.
+ *
  * @param a   one near-Earth position/velocity data structure
  * @param b   another near-Earth position/velocity data structure
  * @return    TRUE (1) if the two near-Earth positions and velocities match within 1 mm and
@@ -149,7 +163,7 @@ int novas_equals_on_surface(const on_surface *a, const on_surface *b) {
  * @sa novas_equals_ssb_posvel(), novas_equals_observer()
  */
 int novas_equals_near_earth(const in_space *a, const in_space *b) {
-  if(a == b)
+  if(!a && !b)
     return 1;
 
   if(!a || !b)
@@ -168,6 +182,9 @@ int novas_equals_near_earth(const in_space *a, const in_space *b) {
  * Such near-Earth data structures are used by observers defined relative to the Solar-System
  * Barycenter (SSB). Two NULL structures are also considered equal.
  *
+ * Note, that a Solar-system position / velocity structure may not equal itself if it contains NAN
+ * or infinite components, since `NAN != NAN` and `ININITE != INFINITE`.
+ *
  * @param a   one Solar-system position/velocity data structure
  * @param b   another Solar-system position/velocity data structure
  * @return    TRUE (1) if the two SSB positions and velocities match within 1 m and ~1 mm/s,
@@ -179,7 +196,7 @@ int novas_equals_near_earth(const in_space *a, const in_space *b) {
  * @sa novas_equals_near_earth(), novas_equals_observer()
  */
 int novas_equals_ssb_posvel(const in_space *a, const in_space *b) {
-  if(a == b)
+  if(!a && !b)
     return 1;
 
   if(!a || !b)
@@ -195,7 +212,10 @@ int novas_equals_ssb_posvel(const in_space *a, const in_space *b) {
 
 /**
  * Checks if two observers are essentially the same within the tolerances associated to their
- * defininf components. Two NULL observers are also considered equal.
+ * defining components. Two NULL observers are also considered equal.
+ *
+ * Note, that an observer may not equal itself if it contains NAN or infinite components, since
+ * `NAN != NAN` and `ININITE != INFINITE`.
  *
  * @param a   an observer data structure
  * @param b   another observer data structure
@@ -206,7 +226,7 @@ int novas_equals_ssb_posvel(const in_space *a, const in_space *b) {
  * @author Attila Kovacs
  */
 int novas_equals_observer(const observer *a, const observer *b) {
-  if(a == b)
+  if(!a && !b)
     return 1;
 
   if(!a || !b)
@@ -247,6 +267,9 @@ int novas_equals_observer(const observer *a, const observer *b) {
  *
  * In addition, two NULL catalog entries are also considered equal.
  *
+ * Note, that a catalog entry may not equal itself if it contains NAN or infinite components,
+ * since `NAN != NAN` and `ININITE != INFINITE`.
+ *
  * @param a   one of the catalog entries
  * @param b   another catalog entry
  * @return    TRUE (1) if the two catalog entries define the same sidereal source effectively,
@@ -258,7 +281,7 @@ int novas_equals_observer(const observer *a, const observer *b) {
  * @sa novas_equals_object()
  */
 int novas_equals_cat_entry(const cat_entry *a, const cat_entry *b) {
-  if(a == b)
+  if(!a && !b)
     return 1;
 
   if(!a || !b)
@@ -288,9 +311,12 @@ int novas_equals_cat_entry(const cat_entry *a, const cat_entry *b) {
 
 /**
  * Checks if two orbital systems match within typical tolerances. Two orbital system are
-   considered equal, if they are defined with respect to the same reference plane, around the same
-   major planet (or Solar-system position), and have the obliquity and ascending node (if
-   obliquity is non-zero) to within 1 &mu;as. Two NULL orbital systems are also considered equal.
+ * considered equal, if they are defined with respect to the same reference plane, around the same
+ * major planet (or Solar-system position), and have the obliquity and ascending node (if
+ * obliquity is non-zero) to within 1 &mu;as. Two NULL orbital systems are also considered equal.
+ *
+ * Note, that an orbital system may not equal itself if it contains NAN or infinite components,
+ * since `NAN != NAN` and `ININITE != INFINITE`.
  *
  * @param a   one of the orbital systems
  * @param b   another orbital system
@@ -303,7 +329,7 @@ int novas_equals_cat_entry(const cat_entry *a, const cat_entry *b) {
  * @sa novas_equals_orbital(), novas_equals_object()
  */
 int novas_equals_orbsys(const novas_orbital_system *a, const novas_orbital_system *b) {
-  if(a == b)
+  if(!a && !b)
     return 1;
 
   if(!a || !b)
@@ -317,13 +343,11 @@ int novas_equals_orbsys(const novas_orbital_system *a, const novas_orbital_syste
     return 0;
   if(!novas_equals_double(remainder(a->obl, DEG360), remainder(b->obl, DEG360), CMP_DEG))
     return 0;
-  if(fabs(a->obl) > CMP_DEG && !novas_equals_double(remainder(a->Omega, DEG360), remainder(b->Omega, DEG360), CMP_DEG))
+  if(sqrt(fabs(a->obl * b->obl)) > CMP_DEG && !novas_equals_double(remainder(a->Omega, DEG360), remainder(b->Omega, DEG360), CMP_DEG))
     return 0;
 
   return 1;
 }
-
-#include <stdio.h>
 
 /**
  * Checks if two Keplerian orbitals match, within typical tolerances. For two orbitals to be
@@ -332,11 +356,15 @@ int novas_equals_orbsys(const novas_orbital_system *a, const novas_orbital_syste
  *
  *   - angular parameters must match to within 1 &mu;as.
  *   - semi-major axis must match to within 1 m.
- *   - eccentricity must match to within 10<sup>-12</sup> time the geometric mean of the two semi-major axes.
+ *   - eccentricity must match to within 10<sup>-12</sup> time the geometric mean of the two
+ *     semi-major axes.
  *   - mean motion must match to within 1 &mu;as / cy.
  *   - apsis and node periods must match to within ~10 ms (see `novas_time_equals()`)
  *
  * In addition, two NULL orbitals are also considered equal.
+ *
+ * Note, that an orbital structure may not equal itself if it contains NAN or infinite
+ * components, since `NAN != NAN` and `ININITE != INFINITE`.
  *
  * @param a   one set of Keplerian orbital parameters
  * @param b   another set of Keplerian orbital parameters
@@ -349,7 +377,7 @@ int novas_equals_orbsys(const novas_orbital_system *a, const novas_orbital_syste
  * @sa novas_equals_object()
  */
 int novas_equals_orbital(const novas_orbital *a, const novas_orbital *b) {
-  if(a == b)
+  if(!a && !b)
     return 1;
 
   if(!a || !b)
@@ -367,11 +395,11 @@ int novas_equals_orbital(const novas_orbital *a, const novas_orbital *b) {
     return 0;
   if(!novas_equals_double(a->e, b->e, 1e-12 * sqrt(a->a * b->a)))
     return 0;
-  if(fabs(a->e) > 1e-6 && !novas_equals_double(a->omega, b->omega, CMP_DEG))
+  if(sqrt(fabs(a->e * b->e)) > 1e-6 && !novas_equals_double(a->omega, b->omega, CMP_DEG))
     return 0;
   if(!novas_equals_double(remainder(a->i, DEG360), remainder(b->i, DEG360), CMP_DEG))
     return 0;
-  if(fabs(a->i) > CMP_DEG && !novas_equals_double(remainder(a->Omega, DEG360), remainder(b->Omega, DEG360), CMP_DEG))
+  if(sqrt(fabs(a->i * b->i)) > CMP_DEG && !novas_equals_double(remainder(a->Omega, DEG360), remainder(b->Omega, DEG360), CMP_DEG))
     return 0;
   if(!novas_time_equals(a->apsis_period, b->apsis_period))
     return 0;
@@ -386,6 +414,9 @@ int novas_equals_orbital(const novas_orbital *a, const novas_orbital *b) {
  * considered equals only if their types, names (case sensitive), and defining parameters match
  * within tolerances. Two NULL objects are also considered equal.
  *
+ * Note, that an astronomical target may not equal itself if it contains NAN or infinite
+ * components, since `NAN != NAN` and `ININITE != INFINITE`.
+ *
  * @param a   an astronomical target
  * @param b   another astronomical target
  * @return    TRUE (1) if the two targets are effectively the same, within tolerances, or else
@@ -395,7 +426,7 @@ int novas_equals_orbital(const novas_orbital *a, const novas_orbital *b) {
  * @author Attila Kovacs
  */
 int novas_equals_object(const object *a, const object *b) {
-  if(a == b)
+  if(!a && !b)
     return 1;
 
   if(!a || !b)
