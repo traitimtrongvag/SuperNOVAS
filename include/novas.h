@@ -3424,6 +3424,13 @@ int novas_equals_orbital(const novas_orbital *a, const novas_orbital *b);
 /// @c_source
 int novas_equals_object(const object *a, const object *b);
 
+/// @c_apparent
+int novas_equals_sky_pos(const sky_pos *a, const sky_pos *b);
+
+int novas_equals_planet_bundle(const novas_planet_bundle *a, const novas_planet_bundle *b);
+
+/// @c_frame
+int novas_equals_frame(const novas_frame *a, const novas_frame *b);
 
 // <================= END of SuperNOVAS API =====================>
 

@@ -108,13 +108,17 @@ Frame& Frame::operator=(const Frame& frame) {
 
 /**
  * Checks if this observing frame is essentially the same as another, given typical tolerances. See
- * `Observer::equals()` and `Time::equals()` for details. Beyond the matching the bbservers and
- * times, mathing frames must also:
+ * `Observer::equals()` and `Time::equals()` for details. Beyond the matching the observers and
+ * times, mathing frames must also match:
  *
- *  - match accuracy
- *  - polar offsets (if defined) must match to 1 &mu;as.
+ *  - accuracy setting
+ *  - polar offsets (for geodetic observers, or else if defined) to 1 &mu;as.
+ *  - stored planet position and velocity data to 1 m and 1 mm/s, respectively.
  *
  * Note, that an observing frame may not equal itself if it contains NAN or infinite components.
+ * The exception is polar offsets for non-geodetic observing frames, where NAN values are
+ * considered 'normal', and hence don't spoil the effective equality so long as both frames
+ * leave these undefined.
  *
  * @param other   the other observing frame
  * @return        `true` if this frame and the argument describe essentially the same observing
@@ -125,9 +129,9 @@ Frame& Frame::operator=(const Frame& frame) {
  * @sa operator==(), operator!=()
  */
 bool Frame::equals(const Frame& other) const {
-  return (_frame.accuracy == other._frame.accuracy)
-          && (_time == other._time)
-          && (_observer == other._observer);
+  return (_time == other._time)
+          && (_observer == other._observer)
+          && novas_equals_frame(&_frame, &other._frame);
 }
 
 /**
@@ -162,10 +166,9 @@ bool Frame::operator!=(const Frame& other) const {
 }
 
 /**
- * Returns the pointer to the underlying NOVAS C `novas_frame` data structure of this observing
- * frame.
+ * Returns the pointer to the underlying C data structure of this observing frame.
  *
- * @return    pointer to the underlying NOVAS C data structure.
+ * @return    pointer to the underlying C data structure.
  *
  * @since 1.6
  */

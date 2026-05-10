@@ -19,7 +19,8 @@
 #include "novas.h"
 
 /// \cond PRIVATE
-#define CMP_DEG                   (1e-6 / 3600.0)   ///< [deg] Compare degrees to 1 &mu;as precison.
+#define CMP_DEG                   (1e-6 / 3600.0)        ///< [deg] Compare degrees to 1 &mu;as precison.
+#define CMP_RAD                   ( CMP_DEG * DEGREE )   ///< [rad] Compare radians to 1 &mu;as precison.
 /// \endcond
 
 
@@ -424,10 +425,10 @@ int novas_equals_orbital(const novas_orbital *a, const novas_orbital *b) {
  *
  * NOTES:
  *
- * - Two NULL (undefined) objects are considered not equal.
+ *  - Two NULL (undefined) objects are considered not equal.
  *
- * - An astronomical target structure may not equal itself if it contains NAN or infinite
- *   components, since `NAN != NAN` and `INFINITE != INFINITE`.
+ *  - An astronomical target structure may not equal itself if it contains NAN or infinite
+ *    components, since `NAN != NAN` and `INFINITE != INFINITE`.
  *
  * @param a   an astronomical target
  * @param b   another astronomical target
@@ -465,7 +466,71 @@ int novas_equals_object(const object *a, const object *b) {
   return 1;
 }
 
-/* TODO
+/**
+ * Checks if two apparent positions on the observer's sky are the same within typical tolerances.
+ * Two sky positions are considered to be equal if their:
+ *
+ *  - coordinates match within 1 &mu;as,
+ *  - distances match within 1 ppm.
+ *  - radial velocities match within 1 mm/s.
+ *  - unit vectors match to 10<sup>-12</sup> (~1 &mu;as).
+ *
+ * NOTES:
+ *
+ *  - Two NULL (undefined) sky positions are considered not equal.
+ *
+ *  - A sky position may not equal itself if it contains NAN or infinite components, since
+ *    `NAN != NAN` and `INFINITE != INFINITE`.
+ *
+ * @param a     a position on the observer's sky
+ * @param b     another sky position
+ * @return      TRUE (1) if the two positions are essentially the same within typical tolerances,
+ *              or else FALSE (0).
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ */
+int novas_equals_sky_pos(const sky_pos *a, const sky_pos *b) {
+  if(!a || !b)
+    return 0;
+
+  if(!novas_equals_deg(15.0 * a->ra, 15.0 * b->ra))
+    return 0;
+  if(!novas_equals_double(a->dec, b->dec, CMP_DEG))
+    return 0;
+  if(!novas_equals_double(a->dis, b->dis, 1e-6 * sqrt(fabs(a->dis * b->dis))))  // [1 ppm]
+    return 0;
+  if(!novas_equals_double(a->rv, b->rv, 1e-6))  // [1 mm/s]
+    return 0;
+  if(!novas_equals_vector(a->r_hat, b->r_hat, 1e-12))  // [~1 &mu;as]
+    return 0;
+
+  return 1;
+}
+
+/**
+ * Checks if two bundles containing Solar-system baricentric planet positions and velocities are
+ * effectively the same. The two bundles are considered equals if:
+ *
+ *  - they contain data for the same set of planets.
+ *  - the planets with data have positions matching within 1 m.
+ *  - the planets with data have velocities matching within 1 mm/s.
+ *
+ * NOTES:
+ *
+ *  - Two NULL (undefined) planet bundles are considered not equal.
+ *
+ *  - A planet bundle may not equal itself if it contains NAN or infinite components for the
+ *    planets they are supposed to have data for, since `NAN != NAN` and `INFINITE != INFINITE`.
+ *
+ * @param a     a planet position / velocity bundle
+ * @param b     another planet position / velocity bundle
+ * @return      TRUE (1) if the two bundles are essentially the same within tolerances, or else
+ *              FALSE (0).
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ */
 int novas_equals_planet_bundle(const novas_planet_bundle *a, const novas_planet_bundle *b) {
   int i;
 
@@ -488,26 +553,67 @@ int novas_equals_planet_bundle(const novas_planet_bundle *a, const novas_planet_
   return 1;
 }
 
-int novas_equals_sky_pos(const sky_pos *a, const sky_pos *b) {
+static int is_geodetic(const observer *obs) {
+  return obs->where == NOVAS_OBSERVER_ON_EARTH || obs->where == NOVAS_AIRBORNE_OBSERVER;
+}
+
+/**
+ * Checks if two observing frames are essentially the same, within typical tolerances. Two frames
+ * are considered equal, if they are both:
+ *
+ *  - initialized,
+ *  - represent the same accuracy,
+ *  - for the same observer,
+ *  - at the same time,
+ *  - same polar offsets (for geodetic observers or if defined),
+ *  - and contain the same planetary ephemeris data
+ *
+ * all within the typical tolerances associated to these. For non-geodetic observers two frames
+ * are considered equal also if both have all NAN (undefined) polar offsets -- since polar offsets
+ * are not generally required for non-geodetic observing frames.
+ *
+ * NOTES:
+ *
+ *  - this function does not check the calculated fields of the observing frames, which are
+ *    assumed to have been left untouched after the called to `novas_make_frame()`. If the user
+ *    modifies the calculated fields, they may need additional checks to ensure 'equality'
+ *    accordingly.
+ *
+ *  - Two NULL (undefined) observing frames are considered not equal.
+ *
+ *  - An observing frame may not equal itself if it contains NAN or infinite components, since
+ *    `NAN != NAN` and `INFINITE != INFINITE`.
+ *
+ * @param a     an observing frame
+ * @param b     another observing frame
+ * @return      TRUE (1) if the two observing frames are effectively the same, given the
+ *              tolerances, or else false.
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ */
+int novas_equals_frame(const novas_frame *a, const novas_frame *b) {
   if(!a || !b)
     return 0;
 
-  if(!novas_equals_deg(15.0 * a->ra, 15.0 * b->ra))
+  if(!novas_frame_is_initialized(a) || !novas_frame_is_initialized(b))
     return 0;
-  if(!novas_equals_double(a->dec, b->dec, CMP_DEG))
+  if(a->accuracy != b->accuracy)
     return 0;
-  if(!novas_equals_double(a->dis, b->dis, 1e-6 * sqrt(fabs(a->dis * b->dis))))  // [1 ppm]
+  if(!novas_equals_timespec(&a->time, &b->time))
     return 0;
-  if(!novas_equals_double(a->rv, b->rv, 1e-6))  // [1 mm/s]
+  if(!novas_equals_observer(&a->observer, &b->observer))
     return 0;
-  if(!novas_equals_vector(a->r_hat, b->r_hat, 1e-12))  // [~1 &mu;as]
+  if(!novas_equals_planet_bundle(&a->planets, &b->planets))
     return 0;
+
+  // Allow all NAN dx/dy for non-geodetic observers
+  if(is_geodetic(&a->observer) || !isnan(a->dx) || !isnan(b->dx) || !isnan(a->dy) || !isnan(b->dy)) {
+    if(!novas_equals_double(a->dx, b->dx, 1e-3))    // [uas]
+      return 0;
+    if(!novas_equals_double(a->dy, b->dy, 1e-3))    // [uas]
+      return 0;
+  }
 
   return 1;
 }
-
-int novas_equals_frame(const novas_frame *a, const novas_frame *b) {
-  // TODO
-  return 1;
-}
-*/
