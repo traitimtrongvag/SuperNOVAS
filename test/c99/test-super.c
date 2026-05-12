@@ -5843,6 +5843,30 @@ static int test_auto_fetch_eop() {
   return n;
 }
 
+static int test_lookup_leap() {
+  int n = 0;
+  const char *leap_file = "resources/leap-seconds.list";
+  FILE *fp;
+
+#if !WITHOUT_CURL && !OFFLINE
+  if(!is_equal("lookup_leap:auto:j2000", novas_lookup_leap(946684800L), 32.0, 1e-15)) n++;
+  if(!is_equal("lookup_leap:auto:1970", novas_lookup_leap(0L), 0.0, 1e-15)) n++;
+#endif
+
+  fp = fopen(leap_file, "r");
+  if(!fp) {
+    fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", leap_file);
+  }
+  else {
+    fclose(fp);
+    if(!is_ok("set_leap_list", novas_set_leap_list(leap_file))) return ++n;
+    if(!is_equal("lookup_leap:offline:j2000", novas_lookup_leap(946684800L), 32.0, 1e-15)) n++;
+  }
+
+  return n;
+}
+
+
 int main(int argc, char *argv[]) {
   int n = 0;
 
@@ -6033,6 +6057,7 @@ int main(int argc, char *argv[]) {
 
   if(test_fetch_eop()) n++;
   if(test_auto_fetch_eop()) n++;
+  if(test_lookup_leap()) n++;
 
   n += test_dates();
 

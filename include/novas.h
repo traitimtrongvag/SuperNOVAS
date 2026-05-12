@@ -3519,7 +3519,7 @@ int novas_set_eop_url(enum novas_eop_series series, const char *url);
 const char *novas_get_eop_url(enum novas_eop_series series);
 
 /// @ingroup earth
-int novas_set_leap_list(FILE *leap_file);
+int novas_set_leap_list(const char *filename);
 
 /// @ingroup earth
 int novas_lookup_leap(time_t t);

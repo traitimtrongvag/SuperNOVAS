@@ -2743,11 +2743,63 @@ static int test_fetch_eop() {
 
 #if WITHOUT_CURL
   if(check("fetch_eop:no_curl", -1, novas_fetch_eop_unix(time(NULL), 0, NULL))) n++;
+#else
+  novas_set_eop_url(EOP_RAPID_IAU2000, "file://nosuchfile");
+  if(check("fetch_eop:eop:rapid:url", -1, novas_fetch_eop(NOVAS_JD_J2000, 0, &eop))) n++;
+
+  // ----------------------------------------------------------------------
+#  if !OFFLINE
+  novas_set_eop_url(EOP_C04_IAU2000_0UTC, "https://datacenter.iers.org/data/latestVersion/finals.all.iau2000.txt");
+  novas_set_eop_url(EOP_C01_IAU2000, "https://datacenter.iers.org/data/latestVersion/EOP_20u24_C04_one_file_1962-now.txt");
+  novas_set_eop_url(EOP_RAPID_IAU2000, "https://datacenter.iers.org/data/latestVersion/EOP_C01_IAU2000_1846-now.txt");
+
+  if(check("fetch_eop:eop:rapid:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 + 41686.0, 0, &eop))) n++; // +2d
+  if(check("fetch_eop:eop:c04:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 + 37667.0, 0, &eop))) n++;  // + 2d
+  if(check("fetch_eop:eop:c01:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 - 4603.268, 0, &eop))) n++; // +100d
+
+  if(check("get_eop_url:series:-1", 1, novas_get_eop_url((enum novas_eop_series) -1) == NULL)) n++;
+  if(check("set_eop_url:series:-1", -1, novas_set_eop_url((enum novas_eop_series) -1, "test"))) n++;
+  if(check("set_eop_url:empty", -1, novas_set_eop_url(EOP_RAPID_IAU2000, ""))) n++;
+#  endif // !OFFLINE
+  // ----------------------------------------------------------------------
+
+  // Reset EOP URLs to their defaults
+  novas_set_eop_url(EOP_C04_IAU2000_0UTC, NULL);
+  novas_set_eop_url(EOP_C01_IAU2000, NULL);
+  novas_set_eop_url(EOP_RAPID_IAU2000, NULL);
+#endif // WITH_CURL
+
+  return n;
+}
+
+static int test_lookup_leap() {
+  int n = 0;
+
+  novas_set_leap_list(NULL);
+  novas_set_auto_fetch_eop(0);
+  if(check("lookup_leap:j2000:no-fetch", -1, novas_lookup_leap(946684800L))) n++;
+
+#if !WITHOUT_CURL && !OFFLINE
+  novas_set_auto_fetch_eop(1);
+  if(check("lookup_leap:far_ahead", -1, novas_lookup_leap(time(NULL) + 3000L * 86400L))) n++;
+#else
+  if(check("lookup_leap:j2000:offline", -1, novas_lookup_leap(946684800L))) n++;
 #endif
 
   return n;
 }
 
+static int test_set_leap_list() {
+  int n = 0;
+
+  if(check("set_leap_list:empty", -1, novas_set_leap_list(""))) n++;
+  if(check("set_leap_list:invalid", -1, novas_set_leap_list("blah"))) n++;
+  if(check("set_leap_list:corrupted", -1, novas_set_leap_list("Makefile"))) n++;
+  // TODO bad expiration
+  // empty leap list
+
+  return n;
+}
 
 int main(int argc, const char *argv[]) {
   int n = 0;
@@ -2985,6 +3037,8 @@ int main(int argc, const char *argv[]) {
 
   if(test_offset_by()) n++;
   if(test_fetch_eop()) n++;
+  if(test_lookup_leap()) n++;
+  if(test_set_leap_list()) n++;
 
   if(n) fprintf(stderr, " -- FAILED %d tests\n", n);
   else fprintf(stderr, " -- OK\n");

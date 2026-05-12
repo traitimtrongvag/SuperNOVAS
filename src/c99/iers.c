@@ -118,7 +118,7 @@ static iers_data_file rapid = { NULL,
 // 1962 -- now
 static iers_data_file medium = { NULL,
         EOP_C04_IAU2000_0UTC,
-        729, 219, NOVAS_JD_MJD0 + 37665, 1.0,
+        729, 219, NOVAS_JD_MJD0 + 37665.0, 1.0,
         16, 26, 122, 38, 134, 50, 146, 111, 206
 };
 
@@ -180,6 +180,7 @@ static iers_leap_entry *parse_leap_file(FILE *fp, long long *expiration) {
           novas_set_errno(errno, fn, "could not parse leap-seconds.list expiration time.");
           return NULL;
         }
+        *expiration -= NTP_UNIX_EPOCH;
       }
     }
     else {
@@ -202,7 +203,7 @@ static iers_leap_entry *parse_leap_file(FILE *fp, long long *expiration) {
 
       // Prepend to head of list.
       e->unix_start = (time_t) (start - NTP_UNIX_EPOCH);
-      e->unix_end = (time_t) (*expiration - NTP_UNIX_EPOCH);
+      e->unix_end = (time_t) *expiration;
       e->next = list;
       if(e->next)
         e->next->unix_end = e->unix_start;
@@ -476,15 +477,14 @@ static void cleanup_handle_async(iers_data_file *file) {
 #endif /* !WITHOUT_CURL */
 // ---------------------------------------------------------------------------
 
-
 /**
  * Specifies a local file containing the official leap seconds list, i.e. `leap-seconds.list`, to
  * use, at least until its expiry. (If the local leap file expires, a new one will be fetched from
  * IERS as needed).
  *
- * @param leap_file     Local `leap-seconds.list` file (as obtained from IERS or a mirror). It is
- *                      typically included in the `tzdata` package on Linux, where it may be found
- *                      as `/usr/share/zoneinfo/leap-seconds.list` typically.
+ * @param filename      Path to a local `leap-seconds.list` file (as obtained from IERS or a
+ *                      mirror). It is typically included in the `tzdata` package on Linux, where
+ *                      it may be found as `/usr/share/zoneinfo/leap-seconds.list` typically.
  * @return              0 if successful, or else -1 if there was an error (errno will indicate the
  *                      type of error).
  *
@@ -494,16 +494,28 @@ static void cleanup_handle_async(iers_data_file *file) {
  * @sa https://hpiers.obspm.fr/iers/bul/bulc/ntp/leap-seconds.list
  * @sa novas_lookup_leap(), novas_fetch_eop(), novas_cleanup_eop()
  */
-int novas_set_leap_list(FILE *leap_file) {
+int novas_set_leap_list(const char *filename) {
   static const char *fn = "novas_set_leap_list";
 
+  FILE *fp;
   iers_leap_entry *list;
   long long expiration = 0LL;
 
-  if(!leap_file)
-    return novas_error(-1, EINVAL, fn, "input leap seconds file is NULL");
+  if(!filename) {
+    set_leap_list(NULL, 0LL);
+    return 0;
+  }
 
-  list = parse_leap_file(leap_file, &expiration);
+  if(!filename[0])
+    return novas_error(-1, EINVAL, fn, "leap seconds file name is empty");
+
+  fp = fopen(filename, "r");
+  if(!fp)
+    return novas_error(-1, errno, fn, "open %s: %s", filename, strerror(errno));
+
+  list = parse_leap_file(fp, &expiration);
+  fclose(fp);
+
   if(!list)
     return novas_trace(fn, -1, 0);
 
@@ -532,26 +544,28 @@ int novas_set_leap_list(FILE *leap_file) {
  * @since 1.7
  * @author Attila Kovacs
  *
- * @sa novas_set_leap_list(), novas_fetch_eop()
+ * @sa novas_set_leap_list(), novas_fetch_eop(), novas_is_auto_fetch_eop()
  */
 int novas_lookup_leap(time_t t) {
   static const char *fn = "novas_lookup_leap";
 
   const iers_leap_entry *e;
   char str[40] = {'\0'};
-  long long expiration = 0LL;
 
   if(!leaps || (t >= leap_expiration && time(NULL) >= leap_expiration)) {
 #if WITHOUT_CURL
     return novas_error(-1, ERANGE, fn, "no leap data available for time %lld", (long long) t);
 #else
-    iers_leap_entry *update = fetch_leaps_async(&expiration);
-    set_leap_list(update, expiration);
+    if(novas_is_auto_fetch_eop()) {
+      long long expiration = 0LL;
+      iers_leap_entry *update = fetch_leaps_async(&expiration);
+      if(!update)
+        return novas_trace(fn, -1, 0);
+      set_leap_list(update, expiration);
+    }
+    else return novas_error(-1, EAGAIN, fn, "automatic EOP fetching is disabled.");
 #endif
   }
-
-  if(!leaps)
-    return novas_trace(fn, -1, 0);
 
   if(t > leaps->unix_end) {
     strftime(str, sizeof(str), "%c", gmtime(&t));
@@ -596,8 +610,8 @@ int novas_set_eop_url(enum novas_eop_series series, const char *url) {
 #else
   char *discard;
 
-  if(!url[0])
-    return novas_error(-1, EINVAL, fn, "Empty URL", (int) series);
+  if(url && !url[0])
+    return novas_error(-1, EINVAL, fn, "empty URL", (int) series);
 
   // Close existing handles...
   // TODO mutex....
