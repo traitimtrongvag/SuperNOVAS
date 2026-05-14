@@ -30,10 +30,6 @@
 #include "novas.h"
 
 /// \cond PRIVATE
-#define UNIX_SECONDS_0UTC_1JAN2000  946684800L    ///< [s] UNIX time at J2000.0
-/// \endcond
-
-/// \cond PRIVATE
 
 #  if SKIP_IERS_DNS_LOOKUP
 #    define IERS_DATACENTER         "141.74.67.212"       ///< datacenter.iers.org
@@ -425,7 +421,11 @@ static int novas_fetch_eop_from_file(iers_data_file *restrict file, double jd, n
 
   for(i = 0; i < n; i++) {
     time_t t = (jd - NOVAS_JD_J2000 + i * file->jd_step) * 86400L + UNIX_SECONDS_0UTC_1JAN2000;
+
     eop[i].leap = novas_lookup_leap(t);
+    if(eop[i].leap == NOVAS_INVALID_LEAP)
+      return novas_trace(fn, -1, 0);
+
     prop_error(fn, eop_parse_line(file, i, lines, &eop[i]), 0);
   }
 
@@ -575,23 +575,18 @@ int novas_set_leap_list(const char *filename) {
  * (provided that fetching it is allowed). In case of errors -1 is returned, with errno set as
  * appropriate.
  *
- * While -1 leap seconds is theoretically possible also, it is unlikely to ever be a real value,
- * due to the generally slowing rotation rate of Earth. If you want to be pedantic, you should set
- * `errno` to 0 prior to this call, and then check `errno` immediately after the call for a less
- * ambiguous error detection method than simply looking for -1 as the return value.
- *
  * Leap seconds were first introduced on 1 Jan 1972. Thus for date preceding the introduction,
  * 0 is returned. Leap seconds prognosis into the future is available only up to the expiration
  * date of the `leap-seconds.list` file (as supplied or updated from IERS).
  *
  * @param t     [s] UNIX time (seconds since 0 UTC, 1 Jan 1970)
- * @return      The leap seconds for the given time, or -1 if there was an error (errno will
- *              indicate the type of error).
+ * @return      The leap seconds for the given time, or NOVAS_INVALID_LEAP (-999) if there was an
+ *              error (errno will indicate the type of error).
  *
  * @since 1.7
  * @author Attila Kovacs
  *
- * @sa novas_set_leap_list(), novas_fetch_eop(), novas_is_auto_fetch_eop()
+ * @sa novas_set_leap_list(), novas_fetch_eop(), novas_is_auto_fetch_eop(), NOVAS_INVALID_LEAP
  */
 int novas_lookup_leap(time_t t) {
   static const char *fn = "novas_lookup_leap";
@@ -601,7 +596,7 @@ int novas_lookup_leap(time_t t) {
 
   if(!leaps || (t >= leap_expiration && time(NULL) >= leap_expiration)) {
 #if WITHOUT_CURL
-    return novas_error(-1, ERANGE, fn, "no leap data available for time %lld", (long long) t);
+    return novas_error(NOVAS_INVALID_LEAP, ERANGE, fn, "no leap data available for time %lld", (long long) t);
 #else
     if(novas_is_auto_fetch_eop()) {
       long long expiration = 0LL;
@@ -610,13 +605,13 @@ int novas_lookup_leap(time_t t) {
         return novas_trace(fn, -1, 0);
       set_leap_list(update, expiration);
     }
-    else return novas_error(-1, EAGAIN, fn, "automatic EOP fetching is disabled.");
+    else return novas_error(NOVAS_INVALID_LEAP, EAGAIN, fn, "automatic EOP fetching is disabled.");
 #endif
   }
 
   if(t > leaps->unix_end) {
     strftime(str, sizeof(str), "%c", gmtime(&t));
-    return novas_error(-1, ERANGE, fn, "Time %s is beyond the leap seconds coverage range", str);
+    return novas_error(NOVAS_INVALID_LEAP, ERANGE, fn, "Time %s is beyond the leap seconds coverage range", str);
   }
 
   for(e = leaps; e != NULL; e = e->next)

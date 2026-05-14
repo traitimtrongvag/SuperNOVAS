@@ -277,6 +277,10 @@
 /// @c_time
 #define NOVAS_JD_HIP              2448349.0625
 
+/// [s] UNIX time at 0 UTC, 1 Jan 2000.0
+/// @since 1.7
+/// @c_time
+#define UNIX_SECONDS_0UTC_1JAN2000  946684800L
 
 /// [m/s] Speed of light in meters/second is a defining physical constant.
 /// @c_util
@@ -2175,7 +2179,10 @@ typedef struct {
   float lod_err;      ///< [s] Standard error on Length of day (LOD).
 } novas_eop;
 
-
+/// Leap seconds value to indicate invalid data
+/// @since 1.7
+/// @sa novas_lookup_leap(), novas_fetch_eop()
+#define NOVAS_INVALID_LEAP  (-999)
 
 /// \cond _PRIVATE
 #ifndef _NUTATION_

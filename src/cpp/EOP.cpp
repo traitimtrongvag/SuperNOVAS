@@ -5,25 +5,21 @@
  * @author Attila Kovacs
  */
 
+#include <iostream>
+
 /// \cond PRIVATE
 #define __NOVAS_INTERNAL_API__    ///< Use definitions meant for internal use by SuperNOVAS only
 /// \endcond
 
 #include "supernovas.h"
 
-/// \cond PRIVATE
-#define EOP_LEAP_FETCH              (-999999)
-#define UNIX_SECONDS_0UTC_1JAN2000  946684800L    ///< [s] UNIX time at J2000.0
-/// \endcond
-
-
 namespace supernovas {
 
 void EOP::validate() {
   static const char *fn = "EOP()";
 
-  if(_leap == EOP_LEAP_FETCH)
-    _valid = false;
+  if(_leap <= NOVAS_INVALID_LEAP)
+    novas_set_errno(EINVAL, fn, "input leap is invalid");
   else if(!isfinite(_dut1))
     novas_set_errno(EINVAL, fn, "input dUT1 is NAN or infinite");
   else if(!_xp.is_valid())
@@ -227,7 +223,7 @@ EOP EOP::fetch_for_jd(double jd, long timeout_millis) {
     return EOP::undefined();
   }
 
-  EOP e = EOP(eop.leap, eop.dut1, eop.xp * Unit::arcsec, eop.yp * Unit::arcsec);
+  EOP e(eop.leap, eop.dut1, eop.xp * Unit::arcsec, eop.yp * Unit::arcsec);
   if(!e.is_valid())
     novas_trace_invalid(fn);
 
@@ -321,9 +317,7 @@ EOP EOP::fetch_for(const time_t time, long timeout_millis) {
  * @sa fetch_for_jd(), fetch_for_mjd(), fetch_current(), novas_fetch_eop()
  */
 EOP EOP::fetch_for(const CalendarDate& date, long timeout_millis) {
-  struct tm tm = {};
-  date.break_down(&tm);
-  return fetch_for(mktime(&tm), timeout_millis);
+  return fetch_for(date.unix_time(), timeout_millis);
 }
 
 /**

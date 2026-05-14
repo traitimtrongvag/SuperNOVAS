@@ -346,8 +346,10 @@ std::string Observer::to_string() const {
  * Returns a new observer located at a fixed observing site.
  *
  * @param site    the observing site
- * @param eop     Earth Orientation Parameters (EOP) appropriate the time of observation, such as
- *                obtained from the IERS bulletins or data service.
+ * @param eop     (optional) Mean (preferably interpolated) Earth Orientation Parameters (EOP)
+ *                appropriate around the time of observation, such as obtained from the IERS
+ *                bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                offsets from IERS as needed (default: undefined).
  * @return        a new observer instance for the given observing site.
  *
  * @since 1.6
@@ -367,8 +369,10 @@ GeodeticObserver Observer::on_earth(const Site& site, const EOP& eop) {
  * @param geodetic    the momentary geodetic location of the observer.
  * @param itrs_vel    the momentary velocity of the observer with respect to the surface
  *                    (in ITRS).
- * @param eop         Earth Orientation Parameters (EOP) appropriate around the time of
- *                    observation, such as obtained from the IERS bulletins or data service.
+ * @param eop         (optional) Mean (preferably interpolated) Earth Orientation Parameters (EOP)
+ *                    appropriate around the time of observation, such as obtained from the IERS
+ *                    bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                    offsets from IERS as needed (default: undefined).
  * @return            a new observer instance for the given moving observer.
  *
  * @since 1.6
@@ -386,8 +390,10 @@ GeodeticObserver Observer::moving_on_earth(const Site& geodetic, const Velocity&
  * observer.
  *
  * @param site          the momentary geodetic location of the observer.
- * @param eop           Earth Orientation Parameters (EOP) appropriate around the time of
- *                      observation.
+ * @param eop           Mean (preferably interpolated) Earth Orientation Parameters (EOP)
+ *                      appropriate around the time of observation, such as obtained from the IERS
+ *                      bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                      offsets from IERS as needed
  * @param horizontal    momentary horizontal speed of moving observer.
  * @param direction     azimuthal direction of motion (from North, measured to the East).
  * @param vertical      (optional) momentary vertical speed of observer (default: 0).
@@ -896,7 +902,7 @@ GeocentricObserver GeodeticObserver::to_geocentric_at(const Time& time, enum nov
  */
 const EOP& GeodeticObserver::mean_eop() const {
   if(novas_is_auto_fetch_eop() && !_eop.is_valid())
-    novas_set_errno(EDOM, "GeodeticObserver::mean_eop()", "EOP is undefined (auto");
+    novas_set_errno(EDOM, "GeodeticObserver::mean_eop()", "EOP is undefined (auto-fetch)");
   return _eop;
 }
 

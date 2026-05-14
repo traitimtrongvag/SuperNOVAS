@@ -2859,13 +2859,13 @@ static int test_lookup_leap() {
 
   novas_set_leap_list(NULL);
   novas_set_auto_fetch_eop(0);
-  if(check("lookup_leap:j2000:no-leaps", -1, novas_lookup_leap(946684800L))) n++;
+  if(check("lookup_leap:j2000:no-leaps", NOVAS_INVALID_LEAP, novas_lookup_leap(946684800L))) n++;
 
   rc = get_resource("leap-seconds.list", path, sizeof(path));
   if(!rc) fprintf(stderr, "WARNING! missing resource '%s': skipping tests requiring it.\n", path);
   else {
     if(check("lookup_leap:set_leap_list", 0, novas_set_leap_list(rc))) n++;
-    if(check("lookup_leap:far_ahead", -1, novas_lookup_leap(time(NULL) + 3000L * 86400L))) n++;
+    if(check("lookup_leap:far_ahead", NOVAS_INVALID_LEAP, novas_lookup_leap(time(NULL) + 3000L * 86400L))) n++;
     novas_set_leap_list(NULL);
   }
 
@@ -2897,7 +2897,7 @@ static int test_set_leap_list() {
   if(!rc) fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", path);
   else {
     if(check("set_leap_list", 0, novas_set_leap_list(rc))) return n++;
-    if(check("lookup_leap:offline:j2000", -1, novas_lookup_leap(946684800L))) n++;
+    if(check("lookup_leap:offline:j2000", NOVAS_INVALID_LEAP, novas_lookup_leap(946684800L))) n++;
   }
 
 

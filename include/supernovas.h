@@ -1512,9 +1512,9 @@ public:
 
   virtual std::string to_string() const;
 
-  static GeodeticObserver on_earth(const Site& site, const EOP& eop);
+  static GeodeticObserver on_earth(const Site& site, const EOP& eop = EOP::undefined());
 
-  static GeodeticObserver moving_on_earth(const Site& site, const Velocity& itrs_vel, const EOP &eop);
+  static GeodeticObserver moving_on_earth(const Site& site, const Velocity& itrs_vel, const EOP &eop = EOP::undefined());
 
   static GeodeticObserver moving_on_earth(const Site& site, const EOP& eop, const ScalarVelocity& horizontal, const Angle& direction,
           const ScalarVelocity& vertical = ScalarVelocity::stationary());
@@ -1986,7 +1986,7 @@ public:
 
   std::string to_string() const;
 
-  static Frame reduced_accuracy(const Observer& obs, const Time& time);
+  static Frame reduced_accuracy(const Observer& obs, const Time& time, const EOP& eop = EOP::undefined());
 
   static const Frame& undefined();
 };

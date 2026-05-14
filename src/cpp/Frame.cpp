@@ -443,13 +443,17 @@ Apparent Frame::apparent_moon_elp2000(double limit_term) const {
  *
  * @param obs       %Observer location
  * @param time      Astrometric time of observation
+ * @param eop       (optional) Mean (preferably interpolated) Earth Orientation Parameters (EOP)
+ *                  appropriate around the time of observation, such as obtained from the IERS
+ *                  bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                  offsets from IERS as needed (default: undefined).
  * @return          A reduced accuracy observing frame for the specified time of observation.
  *
  * @since 1.6
  * @sa Observer::reduced_accuracy_frame_at()
  */
-Frame Frame::reduced_accuracy(const Observer& obs, const Time& time) {
-  Frame f(obs, time, NOVAS_REDUCED_ACCURACY);
+Frame Frame::reduced_accuracy(const Observer& obs, const Time& time, const EOP& eop) {
+  Frame f(obs, time, NOVAS_REDUCED_ACCURACY, eop);
   if(!f.is_valid())
     novas_trace_invalid("Frame::reduced_accuracy()");
   return f;
