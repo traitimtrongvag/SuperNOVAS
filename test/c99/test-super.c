@@ -29,10 +29,25 @@ extern int strncasecmp(const char *s1, const char *s2, size_t n);
 
 #define J2000   NOVAS_JD_J2000
 
+#if defined _WIN32
+#  include <windows.h>
+#  ifndef PATH_MAX
+#    define PATH_MAX MAX_PATH
+#  endif
+#else
+#  include <limits.h>
+#endif
+
 #if defined _WIN32 || defined __CYGWIN__
 #  define PATH_SEP  "\\"
 #else
 #  define PATH_SEP  "/"
+#endif
+
+#ifdef RESOURCES
+static char *resourcePath = RESOURCES;
+#else
+static char *resourcePath = "resources";
 #endif
 
 static char *dataPath;
@@ -114,6 +129,34 @@ static int is_equal(const char *func, double v1, double v2, double prec) {
 
 static double vlen(double *pos) {
   return sqrt(pos[0] * pos[0] + pos[1] * pos[1] + pos[2] * pos[2]);
+}
+
+static char *get_resource(const char *filename, char *path, int len) {
+  FILE *fp;
+  snprintf(path, len, "%s" PATH_SEP "%s", resourcePath, filename);
+  fp = fopen(path, "r");
+  if(fp) {
+    fclose(fp);
+    return path;
+  }
+  return NULL;
+}
+
+static char *get_resource_url(const char *filename) {
+  static char url[PATH_MAX + 10];
+
+  const char *sep = PATH_SEP;
+  char rel[PATH_MAX] = {'\0'}, path[PATH_MAX] = {'\0'};
+  int i;
+
+  if(get_resource(filename, rel, sizeof(rel)) == NULL)
+    return NULL;
+
+  realpath(rel, path);
+  for(i = 0; i < path[i]; i++) if(path[i] == sep[0]) path[i] = '/';
+
+  sprintf(url, "file://%s", path);
+  return url;
 }
 
 static int test_gcrs_j2000_gcrs() {
@@ -5757,10 +5800,16 @@ static int test_equals_frame() {
 static int test_fetch_eop() {
   int n = 0;
 
-#if !WITHOUT_CURL && !OFFLINE
+#if !WITHOUT_CURL
   novas_eop eop = {};
 
-  if(!is_ok("fetch_eop_unix:now", novas_fetch_eop_unix(time(NULL), 0, &eop))) n++;
+#  if !OFFLINE
+  if(!is_ok("fetch_eop:unix:now", novas_fetch_eop_unix(time(NULL), 0, &eop))) n++;
+#  endif
+
+  if(!is_ok("fetch_eop:set_eop_url:rapid", novas_set_eop_url(EOP_RAPID_IAU2000, get_resource_url("finals.all.iau2000.txt")))) n++;
+  if(!is_ok("fetch_eop:set_eop_url:c04", novas_set_eop_url(EOP_C04_IAU2000_0UTC, get_resource_url("EOP_20u24_C04_one_file_1962-now.txt")))) n++;
+  if(!is_ok("fetch_eop:set_eop_url:c01", novas_set_eop_url(EOP_C01_IAU2000, get_resource_url("EOP_C01_IAU2000_1846-now.txt")))) n++;
 
   if(!is_ok("fetch_eop:j2000", novas_fetch_eop(NOVAS_JD_J2000, 0, &eop))) n++;
   if(!is_equal("fetch_eop:j2000:leap", eop.leap, 32, 1e-15)) n++;
@@ -5792,6 +5841,11 @@ static int test_fetch_eop() {
   // TODO check jd, dut1, xp, yp.
 
   if(!is_ok("fetch_eop:timeout", novas_fetch_eop(NOVAS_JD_HIP, 5, &eop))) n++;
+
+  // Reset EOP URLs to their defaults
+  novas_set_eop_url(EOP_C04_IAU2000_0UTC, NULL);
+  novas_set_eop_url(EOP_C01_IAU2000, NULL);
+  novas_set_eop_url(EOP_RAPID_IAU2000, NULL);
 #endif
 
   novas_cleanup_eop();
@@ -5845,21 +5899,17 @@ static int test_auto_fetch_eop() {
 
 static int test_lookup_leap() {
   int n = 0;
-  const char *leap_file = "resources/leap-seconds.list";
-  FILE *fp;
+  char path[1024] = {'\0'}, *rc;
 
 #if !WITHOUT_CURL && !OFFLINE
   if(!is_equal("lookup_leap:auto:j2000", novas_lookup_leap(946684800L), 32.0, 1e-15)) n++;
   if(!is_equal("lookup_leap:auto:1970", novas_lookup_leap(0L), 0.0, 1e-15)) n++;
 #endif
 
-  fp = fopen(leap_file, "r");
-  if(!fp) {
-    fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", leap_file);
-  }
+  rc = get_resource("leap-seconds.list", path, sizeof(path));
+  if(!rc) fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", path);
   else {
-    fclose(fp);
-    if(!is_ok("set_leap_list", novas_set_leap_list(leap_file))) return ++n;
+    if(!is_ok("set_leap_list", novas_set_leap_list(path))) return ++n;
     if(!is_equal("lookup_leap:offline:j2000", novas_lookup_leap(946684800L), 32.0, 1e-15)) n++;
   }
 

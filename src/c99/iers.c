@@ -187,11 +187,14 @@ static iers_leap_entry *parse_leap_file(FILE *fp, long long *expiration) {
       iers_leap_entry *e = (iers_leap_entry *) calloc(1, sizeof(iers_leap_entry));
       long long start = 0LL;
 
+      // -- It's hard to produce a malloc fail in a test environment, so we'll skip coverage tracking on it.
+      // LCOV_EXCL_START
       if(!e) {
         destroy_leap_list(list);
         novas_set_errno(errno, fn, "leap entry alloc error: %s", strerror(errno));
         return NULL;
       }
+      // LCOV_EXCL_STOP
 
       // Parse start time and leap seconds value
       if(sscanf(line, "%lld %d", &start, &e->leap) < 2) {
@@ -320,10 +323,14 @@ static int novas_fetch_eop_chunk(CURL **restrict pCurl, const char *restrict url
   return 0;
 }
 
-static float read_float(const char *str) {
-  char *tail = NULL;
-  float f = (float) strtod(str, &tail);
-  return (tail == str) ? NAN : f;
+static float read_float(const char *str, int required) {
+  float f = NAN;
+  int n = sscanf(str, "%f", &f);
+  if(required && n < 1) {
+    errno = EBADMSG;
+    return NAN;
+  }
+  return f;
 }
 
 static int eop_parse_line(const iers_data_file *restrict file, int line, char *str, novas_eop *restrict eop) {
@@ -340,15 +347,15 @@ static int eop_parse_line(const iers_data_file *restrict file, int line, char *s
   eop->series = file->series;
   eop->jd = NOVAS_JD_MJD0 + strtod(from + file->ijd, NULL);
 
-  eop->xp = read_float(from + file->ixp);
-  eop->yp = read_float(from + file->iyp);
-  eop->dut1 = read_float(from + file->idut);
-  eop->lod = read_float(from + file->ilod);
+  eop->xp = read_float(from + file->ixp, 1);
+  eop->yp = read_float(from + file->iyp, 1);
+  eop->dut1 = read_float(from + file->idut, 1);
+  eop->lod = read_float(from + file->ilod, 0);
 
-  eop->xp_err = read_float(from + file->ixpe);
-  eop->yp_err = read_float(from + file->iype);
-  eop->dut1_err = read_float(from + file->idute);
-  eop->lod_err = read_float(from + file->ilode);
+  eop->xp_err = read_float(from + file->ixpe, 0);
+  eop->yp_err = read_float(from + file->iype, 0);
+  eop->dut1_err = read_float(from + file->idute, 0);
+  eop->lod_err = read_float(from + file->ilode, 0);
 
   if(file == &rapid) {
     eop->lod *= 1e-3;       ///< finals LOD is milliseconds.
@@ -522,7 +529,8 @@ static void cleanup_handle_async(iers_data_file *file) {
  *
  * @param filename      Path to a local `leap-seconds.list` file (as obtained from IERS or a
  *                      mirror). It is typically included in the `tzdata` package on Linux, where
- *                      it may be found as `/usr/share/zoneinfo/leap-seconds.list` typically.
+ *                      it may be found as `/usr/share/zoneinfo/leap-seconds.list` typically. Or,
+ *                      NULL to clean up any prior leap seconds resources.
  * @return              0 if successful, or else -1 if there was an error (errno will indicate the
  *                      type of error).
  *
@@ -563,10 +571,11 @@ int novas_set_leap_list(const char *filename) {
 
 /**
  * Returns the leap seconds for the given UNIX timestamp, based either on a locally supplied leap
- * seconds list (see `novas_set_leap_list()`), or else from data obtained as needed from IERS. In
- * case of errors -1 is returned, with errno set as appropriate.
+ * seconds list (see `novas_set_leap_list()`), or else from data obtained as needed from IERS
+ * (provided that fetching it is allowed). In case of errors -1 is returned, with errno set as
+ * appropriate.
  *
- * While -1 is leap seconds is theoretically possible also, it is unlikely to ever be a real value,
+ * While -1 leap seconds is theoretically possible also, it is unlikely to ever be a real value,
  * due to the generally slowing rotation rate of Earth. If you want to be pedantic, you should set
  * `errno` to 0 prior to this call, and then check `errno` immediately after the call for a less
  * ambiguous error detection method than simply looking for -1 as the return value.
@@ -893,7 +902,7 @@ int novas_fetch_eop_unix(time_t t, long timeout_millis, novas_eop *eop) {
  * @since 1.7
  * @author Attila Kovacs
  *
- * @sa novas_is_auto_fetch_eop(), novas_fetch_eop()
+ * @sa novas_is_auto_fetch_eop(), novas_fetch_eop(), novas_lookup_leap()
  * @sa novas_set_time(), novas_make_frame()
  * @sa Time, Frame, GeodeticObserver, CalendarDate::to_time()
  */

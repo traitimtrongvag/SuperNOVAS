@@ -2135,10 +2135,10 @@ enum novas_eop_series {
   /// List of leap seconds, since their introduction in 1972 (`leap-seconds.list`).
   EOP_LEAP_LIST,
 
-  /// IERS Rapid Service data for IAU2000 (`finals.all.iau2000.txt`).
+  /// IERS Rapid Service data for IAU2000, starting in 1973 (`finals.all.iau2000.txt`).
   EOP_RAPID_IAU2000,
 
-  /// IERS C04 Long-term data from 2 Jan 1962 to now, daily at 0 UTC (`EOP_20u24_C04_one_file_1962-now.txt`).
+  /// IERS C04 Long-term data (ITRF 2020) from 2 Jan 1962 to now, daily at 0 UTC (`EOP_20u24_C04_one_file_1962-now.txt`).
   EOP_C04_IAU2000_0UTC,
 
   /// IERS C01 Long-term data from 1846 to now (`EOP_C01_IAU2000_1846-now.txt`).

@@ -3,7 +3,6 @@
  * @author Attila Kovacs
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -14,13 +13,28 @@
 #include "novas.h"
 #include "solarsystem.h"
 
+#if defined _WIN32
+#  include <windows.h>
+#  ifndef PATH_MAX
+#    define PATH_MAX MAX_PATH
+#  endif
+#else
+#  include <limits.h>
+#endif
+
 #if defined _WIN32 || defined __CYGWIN__
 #  define PATH_SEP  "\\"
 #else
 #  define PATH_SEP  "/"
 #endif
 
-static char *dataPath = "../data";
+#ifdef RESOURCES
+static char *resourcePath = RESOURCES;
+#else
+static char *resourcePath = "resources";
+#endif
+
+static char *dataPath = ".." PATH_SEP "data";
 
 static int dummy_ephem(const char *name, long id, double jd_tdb_high, double jd_tdb_low, enum novas_origin *origin, double *pos, double *vel) {
   (void) name;
@@ -53,6 +67,34 @@ static int check_nan(const char *func, double value) {
     return 1;
   }
   return 0;
+}
+
+static char *get_resource(const char *filename, char *path, int len) {
+  FILE *fp;
+  snprintf(path, len, "%s" PATH_SEP "%s", resourcePath, filename);
+  fp = fopen(path, "r");
+  if(fp) {
+    fclose(fp);
+    return path;
+  }
+  return NULL;
+}
+
+static char *get_resource_url(const char *filename) {
+  static char url[PATH_MAX + 10];
+
+  const char *sep = PATH_SEP;
+  char rel[PATH_MAX] = {'\0'}, path[PATH_MAX] = {'\0'};
+  int i;
+
+  if(get_resource(filename, rel, sizeof(rel)) == NULL)
+    return NULL;
+
+  realpath(rel, path);
+  for(i = 0; i < path[i]; i++) if(path[i] == sep[0]) path[i] = '/';
+
+  sprintf(url, "file://%s", path);
+  return url;
 }
 
 static int test_make_on_surface() {
@@ -2740,6 +2782,7 @@ static int test_fetch_eop() {
   observer obs = {};
   novas_timespec ts = {};
   novas_frame frame = {};
+  char *url;
 
   if(check("fetch_eop:eop:null", -1, novas_fetch_eop(NOVAS_JD_J2000, 0, NULL))) n++;
   if(check("fetch_eop:jd:low", -1, novas_fetch_eop(0.0, 0, &eop))) n++;
@@ -2755,21 +2798,51 @@ static int test_fetch_eop() {
   novas_set_split_time(NOVAS_TT, 0L, 0.0, 0, 0.0, &ts);
   if(check("fetch_eop:make_frame:old", 21, novas_make_frame(NOVAS_REDUCED_ACCURACY, &obs, &ts, NAN, NAN, &frame))) n++;
 
-  // ----------------------------------------------------------------------
-#  if !OFFLINE
-  novas_set_eop_url(EOP_C04_IAU2000_0UTC, "https://datacenter.iers.org/data/latestVersion/finals.all.iau2000.txt");
-  novas_set_eop_url(EOP_C01_IAU2000, "https://datacenter.iers.org/data/latestVersion/EOP_20u24_C04_one_file_1962-now.txt");
-  novas_set_eop_url(EOP_RAPID_IAU2000, "https://datacenter.iers.org/data/latestVersion/EOP_C01_IAU2000_1846-now.txt");
+  url = get_resource_url("finals.all.iau2000.txt");
+  if(!url) fprintf(stderr, "WARNING! missing resource 'finals.all.iau2000.txt': skipping tests requiring it.\n");
+  else {
+    novas_set_eop_url(EOP_C04_IAU2000_0UTC, url);
+    if(check("fetch_eop:eop:c04:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 + 37667.0, 0, &eop))) n++;  // + 2d
+  }
 
-  if(check("fetch_eop:eop:rapid:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 + 41686.0, 0, &eop))) n++; // +2d
-  if(check("fetch_eop:eop:c04:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 + 37667.0, 0, &eop))) n++;  // + 2d
-  if(check("fetch_eop:eop:c01:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 - 4603.268, 0, &eop))) n++; // +100d
+  url = get_resource_url("EOP_20u24_C04_one_file_1962-now.txt");
+  if(!url) fprintf(stderr, "WARNING! missing resource 'EOP_20u24_C04_one_file_1962-now.txt': skipping tests requiring it.\n");
+  else {
+    novas_set_eop_url(EOP_C01_IAU2000, url);
+    if(check("fetch_eop:eop:c01:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 - 4603.268, 0, &eop))) n++; // +100d
+  }
+
+  url = get_resource_url("EOP_C01_IAU2000_1846-now.txt");
+  if(!url) fprintf(stderr, "WARNING! missing resource 'EOP_C01_IAU2000_1846-now.txt': skipping tests requiring it.\n");
+  else {
+    novas_set_eop_url(EOP_RAPID_IAU2000, url);
+    if(check("fetch_eop:eop:rapid:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 + 41686.0, 0, &eop))) n++; // +2d
+  }
 
   if(check("get_eop_url:series:-1", 1, novas_get_eop_url((enum novas_eop_series) -1) == NULL)) n++;
   if(check("set_eop_url:series:-1", -1, novas_set_eop_url((enum novas_eop_series) -1, "test"))) n++;
   if(check("set_eop_url:empty", -1, novas_set_eop_url(EOP_RAPID_IAU2000, ""))) n++;
-#  endif // !OFFLINE
-  // ----------------------------------------------------------------------
+
+  url = get_resource_url("C01-start.txt");
+  if(!url) fprintf(stderr, "WARNING! missing resource 'C01-start.txt': skipping tests requiring it.\n");
+  else {
+    if(check("set_eop_url:bad-start", 0, novas_set_eop_url(EOP_C01_IAU2000, url))) n++;
+    if(check("fetch_eop:bad-start", -1,  novas_fetch_eop(NOVAS_JD_MJD0 - 4650.0, 0, &eop))) n++;
+  }
+
+  url = get_resource_url("C01-bad.txt");
+  if(!url) fprintf(stderr, "WARNING! missing resource 'C01-bad.txt': skipping tests requiring it.\n");
+  else {
+    if(check("set_eop_url:bad-entry", 0, novas_set_eop_url(EOP_C01_IAU2000, url))) n++;
+    if(check("fetch_eop:bad-entry", -1,  novas_fetch_eop(NOVAS_JD_MJD0 - 4650.0, 0, &eop))) n++;
+  }
+
+  url = get_resource_url("C01-align.txt");
+  if(!url) fprintf(stderr, "WARNING! missing resource 'C01-align.txt': skipping tests requiring it.\n");
+  else {
+    if(check("set_eop_url:bad-align", 0, novas_set_eop_url(EOP_C01_IAU2000, url))) n++;
+    if(check("fetch_eop:bad-align", -1,  novas_fetch_eop(NOVAS_JD_MJD0 - 4650.0, 0, &eop))) n++;
+  }
 
   // Reset EOP URLs to their defaults
   novas_set_eop_url(EOP_C04_IAU2000_0UTC, NULL);
@@ -2782,17 +2855,21 @@ static int test_fetch_eop() {
 
 static int test_lookup_leap() {
   int n = 0;
+  char path[1024] = {'\0'}, *rc;
 
   novas_set_leap_list(NULL);
   novas_set_auto_fetch_eop(0);
-  if(check("lookup_leap:j2000:no-fetch", -1, novas_lookup_leap(946684800L))) n++;
+  if(check("lookup_leap:j2000:no-leaps", -1, novas_lookup_leap(946684800L))) n++;
 
-#if !WITHOUT_CURL && !OFFLINE
+  rc = get_resource("leap-seconds.list", path, sizeof(path));
+  if(!rc) fprintf(stderr, "WARNING! missing resource '%s': skipping tests requiring it.\n", path);
+  else {
+    if(check("lookup_leap:set_leap_list", 0, novas_set_leap_list(rc))) n++;
+    if(check("lookup_leap:far_ahead", -1, novas_lookup_leap(time(NULL) + 3000L * 86400L))) n++;
+    novas_set_leap_list(NULL);
+  }
+
   novas_set_auto_fetch_eop(1);
-  if(check("lookup_leap:far_ahead", -1, novas_lookup_leap(time(NULL) + 3000L * 86400L))) n++;
-#else
-  if(check("lookup_leap:j2000:offline", -1, novas_lookup_leap(946684800L))) n++;
-#endif
 
   return n;
 }
@@ -2800,42 +2877,32 @@ static int test_lookup_leap() {
 static int test_set_leap_list() {
   int n = 0;
 
-  const char *bad_exp = "resources/bad-expiration.list";
-  const char *bad_entry = "resources/bad-entry.list";
-  const char *truncated = "resources/truncated-leap.list";
-  FILE *fp;
+  char path[1024] = {'\0'}, *rc;
 
   novas_set_auto_fetch_eop(0);
 
-  if(check("set_leap_list:empty", -1, novas_set_leap_list(""))) n++;
+  if(check("set_leap_list:empty_string", -1, novas_set_leap_list(""))) n++;
   if(check("set_leap_list:invalid", -1, novas_set_leap_list("blah"))) n++;
   if(check("set_leap_list:garbage", -1, novas_set_leap_list("Makefile"))) n++;
 
-  fp = fopen(bad_exp, "r");
-  if(!fp) fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", bad_exp);
-  else {
-    fclose(fp);
-    if(check("set_leap_list", -1, novas_set_leap_list(bad_exp))) return n++;
-  }
+  rc = get_resource("bad-expiration.list", path, sizeof(path));
+  if(!rc) fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", path);
+  else if(check("set_leap_list", -1, novas_set_leap_list(rc))) return n++;
 
-  fp = fopen(bad_entry, "r");
-  if(!fp) fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", bad_entry);
-  else {
-    fclose(fp);
-    if(check("set_leap_list", -1, novas_set_leap_list(bad_entry))) return n++;
-  }
+  rc = get_resource("bad-entry.list", path, sizeof(path));
+  if(!rc) fprintf(stderr, "WARNING! Missing %s. skip tests requiring it", path);
+  else if(check("set_leap_list", -1, novas_set_leap_list(rc))) return n++;
 
-  fp = fopen(truncated, "r");
-  if(!fp) fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", truncated);
+  rc = get_resource("truncated-leap.list", path, sizeof(path));
+  if(!rc) fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", path);
   else {
-    fclose(fp);
-    if(check("set_leap_list", 0, novas_set_leap_list(truncated))) return n++;
+    if(check("set_leap_list", 0, novas_set_leap_list(rc))) return n++;
     if(check("lookup_leap:offline:j2000", -1, novas_lookup_leap(946684800L))) n++;
   }
 
-#if !WITHOUT_CURL && !OFFLINE
+
+  novas_set_leap_list(NULL);
   novas_set_auto_fetch_eop(1);
-#endif
 
   return n;
 }
