@@ -777,7 +777,6 @@ int novas_get_eop_itrf_year(enum novas_eop_series series) {
 #endif
 }
 
-
 /**
  * Releases resources used by URL handles used for obtaining Earth Orientation Parameter (EOP)
  * data from the International Earth Rotation and Reference Systems Service (IERS), including
