@@ -43,30 +43,36 @@ static bool is_valid_parms(double dUT1,  enum novas_timescale timescale) {
  * Instantiates an astrometric time instance with the specified time parameters.
  *
  * @param jd            [day] Julian date (in the selected timescale)
- * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0)
- * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service (default: 0.0).
+ * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0). It may be unused if
+ *                      `dUT1` is NAN -- see below.
+ * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service, or
+ *                      NAN to fetch leap and dUT1 from IERS, if possible and allowed.
  * @param timescale     (optional) Astronomical timescale (default: TT).
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
+ * @sa novas_set_auto_fetch_eop()
  */
 Time::Time(double jd, int leap_seconds, double dUT1, enum novas_timescale timescale) {
   novas_set_time(timescale, jd, leap_seconds, dUT1, &_ts);
   if(!isfinite(jd))
     novas_set_errno(EINVAL, "Time()", "input jd is NAN or infinite");
   else
-    _valid = is_valid_parms(dUT1, timescale);
+    _valid = is_valid_parms(_ts.dut1, timescale);
 }
 
 /**
  * Instantiates an astrometric time instance with the specified time parameters.
  *
  * @param jd            [day] Julian date (in the selected timescale)
- * @param eop           Earth Orientation Parameters (EOP) values, e.g. obtained from IERS.
+ * @param eop           (optional) Earth Orientation Parameters (EOP) values, e.g. obtained from
+ *                      IERS, or EOP::undefined() to fetch it from IERS, if possible and allowed
+ *                      (default: undefined).
  * @param timescale     (optional) Astronomical timescale (default: TT).
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
+ * @sa novas_set_auto_fetch_eop()
  */
 Time::Time(double jd, const EOP& eop, enum novas_timescale timescale)
 : Time(jd, eop.leap_seconds(), eop.dUT1().seconds(), timescale) {}
@@ -77,12 +83,15 @@ Time::Time(double jd, const EOP& eop, enum novas_timescale timescale)
  *
  * @param ijd           [day] integer part of Julian date (in the selected timescale)
  * @param fjd           [day] fractional part of Julian date (in the selected timescale)
- * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0)
- * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service (default: 0.0).
+ * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0). It may be unused if
+ *                      `dUT1` is NAN -- see below.
+ * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service, or
+ *                      NAN to fetch leap and dUT1 from IERS, if possible and allowed.
  * @param timescale     (optional) Astronomical timescale (default: TT).
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
+ * @sa novas_set_auto_fetch_eop()
  */
 Time::Time(long ijd, double fjd, int leap_seconds, double dUT1, enum novas_timescale timescale) {
   novas_set_split_time(timescale, ijd, fjd, leap_seconds, dUT1, &_ts);
@@ -90,7 +99,7 @@ Time::Time(long ijd, double fjd, int leap_seconds, double dUT1, enum novas_times
   if(!isfinite(fjd))
     novas_set_errno(EINVAL, "Time()", "input jd is NAN or infinite");
   else
-    _valid = is_valid_parms(dUT1, timescale);
+    _valid = is_valid_parms(_ts.dut1, timescale);
 }
 
 /**
@@ -98,7 +107,9 @@ Time::Time(long ijd, double fjd, int leap_seconds, double dUT1, enum novas_times
  *
  * @param ijd           [day] integer part of Julian date (in the selected timescale)
  * @param fjd           [day] fractional part of Julian date (in the selected timescale)
- * @param eop           Earth Orientation Parameters (EOP) values, e.g. obtained from IERS.
+ * @param eop           (optional) Earth Orientation Parameters (EOP) values, e.g. obtained from
+ *                      IERS, or EOP::undefined() to fetch it from IERS, if possible and allowed
+ *                      (default: undefined).
  * @param timescale     (optional) Astronomical timescale (default: TT).
  *
  * @since 1.6
@@ -111,34 +122,39 @@ Time::Time(long ijd, double fjd, const EOP& eop, enum novas_timescale timescale)
  * Instantiates an astrometric time instance with the specified time parameters.
  *
  * @param timestamp     A precision timestamp, such as an ISO 8601 timestamp.
- * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0)
- * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service
- *                      (default: 0.0).
+ * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0). It may be unused if
+ *                      `dUT1` is NAN -- see below.
+ * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service, or
+ *                      NAN to fetch leap and dUT1 from IERS, if possible and allowed.
  * @param timescale     (optional) Astronomical timescale (default: TT).
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
  * @sa novas_parse_date(), novas_parse_ido_date(), novas_parse_date_format(),
  *     novas_parse_timescale() for more managed parsing from strings.
+ * @sa novas_set_auto_fetch_eop()
  */
 Time::Time(const std::string& timestamp, int leap_seconds, double dUT1, enum novas_timescale timescale) {
   if(novas_set_str_time(timescale, timestamp.c_str(), leap_seconds, dUT1, &_ts) != 0)
     novas_trace_invalid("Time()");
   else
-    _valid = is_valid_parms(dUT1, timescale);
+    _valid = is_valid_parms(_ts.dut1, timescale);
 }
 
 /**
  * Instantiates an astrometric time instance with the specified time parameters.
  *
  * @param timestamp     A precision timestamp, such as an ISO 8601 timestamp.
- * @param eop           Earth Orientation Parameters (EOP) values, e.g. obtained from IERS.
+ * @param eop           (optional) Earth Orientation Parameters (EOP) values, e.g. obtained from
+ *                      IERS, or EOP::undefined() to fetch it from IERS, if possible and allowed
+ *                      (default: undefined).
  * @param timescale     (optional) Astronomical timescale (default: TT).
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
  * @sa novas_parse_date(), novas_parse_ido_date(), novas_parse_date_format(),
  *     novas_parse_timescale() for more managed parsing from strings.
+ * @sa novas_set_auto_fetch_eop()
  */
 Time::Time(const std::string& timestamp, const EOP& eop, enum novas_timescale timescale)
 : Time(timestamp, eop.leap_seconds(), eop.dUT1().seconds(), timescale) {}
@@ -147,18 +163,21 @@ Time::Time(const std::string& timestamp, const EOP& eop, enum novas_timescale ti
  * Instantiates an astrometric time instance with the specified time parameters.
  *
  * @param t             A precision POSIX standard UTC timestamp.
- * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0)
- * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service (default: 0.0).
+ * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0). It may be unused if
+ *                      `dUT1` is NAN -- see below.
+ * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service, or
+ *                      NAN to fetch leap and dUT1 from IERS, if possible and allowed.
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
+ * @sa novas_set_auto_fetch_eop()
  */
 Time::Time(const struct timespec *t, int leap_seconds, double dUT1) {
   if(!t)
     novas_set_errno(EINVAL, "Time()", "input timespec is NULL");
   else {
     novas_set_unix_time(t->tv_sec, t->tv_nsec, leap_seconds, dUT1, &_ts);
-    _valid = is_valid_parms(dUT1, NOVAS_UTC);
+    _valid = is_valid_parms(_ts.dut1, NOVAS_UTC);
   }
 }
 
@@ -166,10 +185,13 @@ Time::Time(const struct timespec *t, int leap_seconds, double dUT1) {
  * Instantiates an astrometric time instance with the specified time parameters.
  *
  * @param t             A precision POSIX standard UTC timestamp.
- * @param eop           Earth Orientation Parameters (EOP) values, e.g. obtained from IERS.
+ * @param eop           (optional) Earth Orientation Parameters (EOP) values, e.g. obtained from
+ *                      IERS, or EOP::undefined() to fetch it from IERS, if possible and
+ *                      allowed (default: undefined).
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
+ * @sa novas_set_auto_fetch_eop()
  */
 Time::Time(const struct timespec *t, const EOP& eop)
 : Time(t, eop.leap_seconds(), eop.dUT1().seconds()) {}
@@ -817,12 +839,15 @@ Time Time::from_mjd(double mjd, int leap_seconds, double dUT1, enum novas_timesc
  * timescale of choice.
  *
  * @param mjd           [day] Modified Julian Date, in the timescale of choice
- * @param eop           Earth Orientation Parameters (EOP) values, e.g. obtained from IERS.
+ * @param eop           (optional) Earth Orientation Parameters (EOP) values, e.g. obtained from
+ *                      IERS, or EOP::undefined() to fetch it from IERS, if possible and
+ *                      allowed (default: undefined).
  * @param timescale     (optional) timescale in which MJD was specified (default: TT)
  * @return              a new astrometric time instance for the given MJD date.
  *
  * @since 1.6
  * @sa Time(), now(), j2000(), b1950(), b1900(), hip()
+ * @sa novas_set_auto_fetch_eop()
  */
 Time Time::from_mjd(double mjd, const EOP& eop, enum novas_timescale timescale) {
   return from_mjd(mjd, eop.leap_seconds(), eop.dUT1().seconds(), timescale);
@@ -834,11 +859,14 @@ Time Time::from_mjd(double mjd, const EOP& eop, enum novas_timescale timescale) 
  * sure that your computer is well synchronized to a trustworthy time server, preferably on a local
  * network, such as an ntp server with a GPS receiver.
  *
- * @param eop           Earth Orientation Parameters (EOP) values, e.g. obtained from IERS.
+ * @param eop           (optional) Earth Orientation Parameters (EOP) values, e.g. obtained from
+ *                      IERS, or EOP::undefined() to fetch it from IERS, if possible and
+ *                      allowed (default: undefined).
  * @return              a new astrometric time corresponding to the current system time.
  *
  * @since 1.6
  * @sa Time(), from_mjd(), j2000(), b1950(), b1900(), hip()
+ * @sa novas_set_auto_fetch_eop()
  */
 Time Time::now(const EOP& eop) {
   novas_timespec ts = {};

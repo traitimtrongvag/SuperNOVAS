@@ -39,6 +39,11 @@ jobs:
       CC: gcc
     steps:
 
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -q -y
+        sudo apt-get install -y libcurl4-openssl-dev
+
     - name: install doxygen
       run: sudo apt-get install doxygen
 
@@ -54,6 +59,11 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update -q -y
+        sudo apt-get install -y libcurl4-openssl-dev
 
     - name: Checkout source
       uses: actions/checkout@v6

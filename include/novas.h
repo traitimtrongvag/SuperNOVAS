@@ -22,9 +22,18 @@
 #define _NOVAS_
 
 #include <math.h>   // for sin, cos
+#include <stdio.h>  // FILE
 #include <stdlib.h> // NULL
 #include <stdint.h>
 #include <time.h>
+
+#ifndef EXTERN
+#  if(WIN32)
+#    define EXTERN __declspec(dllimport) extern
+#  else
+#    define EXTERN extern
+#  endif
+#endif
 
 /// \cond PRIVATE
 #if __STDC_VERSION__ < 199901L
@@ -57,7 +66,6 @@
 // compiler options
 //
 #ifdef COMPAT
-#  include <stdio.h>
 #  include <ctype.h>
 #  include <string.h>
 
@@ -269,6 +277,10 @@
 /// @c_time
 #define NOVAS_JD_HIP              2448349.0625
 
+/// [s] UNIX time at 0 UTC, 1 Jan 2000.0
+/// @since 1.7
+/// @c_time
+#define UNIX_SECONDS_0UTC_1JAN2000  946684800L
 
 /// [m/s] Speed of light in meters/second is a defining physical constant.
 /// @c_util
@@ -2110,6 +2122,65 @@ enum novas_reference_ellipsoid {
  */
 #define NOVAS_REFERENCE_ELLIPSOIDS (NOVAS_IERS_2003_ELLIPSOID + 1)
 
+/**
+ * Identifier of the IERS EOP series used (or to use).
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ *
+ * @c_earth
+ *
+ * @sa novas_eop, novas_set_eop_url()
+ */
+enum novas_eop_series {
+  /// List of leap seconds, since their introduction in 1972 (`leap-seconds.list`).
+  EOP_LEAP_LIST = 0,
+
+  /// IERS Rapid Service data for IAU2000, starting in 1973 (`finals.all.iau2000.txt`).
+  EOP_RAPID_IAU2000,
+
+  /// IERS C04 Long-term data (ITRF 2020) from 2 Jan 1962 to now, daily at 0 UTC (`EOP_20u24_C04_one_file_1962-now.txt`).
+  EOP_C04_IAU2000_0UTC,
+
+  /// IERS C01 Long-term data from 1846 to now (`EOP_C01_IAU2000_1846-now.txt`).
+  EOP_C01_IAU2000
+};
+
+/**
+ * Number of Earth Orientation Parameter Data series handled by __SuperNOVAS__.
+ *
+ * @since 1.7
+ * @sa enum novas_eop_series
+ */
+#define NOVAS_NUM_EOP_SERIES      ( EOP_C01_IAU2000 + 1 )
+
+/**
+ * Earth Orienation Parameters (EOP), such as obtained from IERS.
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ *
+ * @c_earth
+ */
+typedef struct {
+  enum novas_eop_series series; ///< Origin of EOP data (if known)
+  double jd;          ///< [day] Julian day of the measurement or prognosis (in any time measure).
+  int leap;           ///< [s] Leap seconds, that is the TAI - UTC time difference.
+  float dut1;         ///< [s] UT1 - UTC time difference.
+  float dut1_err;     ///< [s] Standard error on UT1 - UTC time difference.
+  float xp;           ///< [arcsec] _x_<sub>p</sub>: polar offset in ITRF _x_ direction.
+  float xp_err;       ///< [arcsec] Standard error on _x_<sub>p</sub>.
+  float yp;           ///< [arcsec] _y_<sub>p</sub>: polar offset in ITRF _y_ direction.
+  float yp_err;       ///< [arcsec] Standard error on _y_<sub>p</sub>.
+  float lod;          ///< [s] Length of day (LOD) differential.
+  float lod_err;      ///< [s] Standard error on Length of day (LOD).
+} novas_eop;
+
+/// Leap seconds value to indicate invalid data
+/// @since 1.7
+/// @sa novas_lookup_leap(), novas_fetch_eop()
+#define NOVAS_INVALID_LEAP  (-999)
+
 /// \cond _PRIVATE
 #ifndef _NUTATION_
 #define _NUTATION_
@@ -3431,6 +3502,39 @@ int novas_equals_planet_bundle(const novas_planet_bundle *a, const novas_planet_
 
 /// @c_frame
 int novas_equals_frame(const novas_frame *a, const novas_frame *b);
+
+// in iers.c
+/// @c_earth
+int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop);
+
+/// @c_earth
+int novas_fetch_eop_unix(time_t t, long timeout_millis, novas_eop *eop);
+
+/// @c_earth
+void novas_reset_eop();
+
+/// @ingroup earth
+int novas_set_auto_fetch_eop(int enabled);
+
+/// @ingroup earth
+int novas_is_auto_fetch_eop();
+
+/// @ingroup earth
+int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *url);
+
+/// @ingroup earth
+const char *novas_get_eop_url(enum novas_eop_series series);
+
+/// @ingroup earth
+int novas_get_eop_itrf_year(enum novas_eop_series series);
+
+/// @ingroup earth
+int novas_set_leap_list(const char *filename);
+
+/// @ingroup earth
+int novas_lookup_leap(time_t t);
+
+
 
 // <================= END of SuperNOVAS API =====================>
 

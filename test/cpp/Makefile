@@ -2,7 +2,7 @@
 
 CPPFLAGS += -I../../include
 CFLAGS += -g
-LDFLAGS += --coverage -lm 
+LDFLAGS += --coverage -lm
 
 include ../../config.mk
 
@@ -12,6 +12,9 @@ CPP_OBJECTS = $(subst .cpp,.opp, $(subst $(CPP_SRC)/,obj/, $(CPP_SOURCES)))
 
 TESTS = $(subst .cpp,, $(wildcard *.cpp))
 
+ifeq ($(CURL_SUPPORT),1)
+  LDFLAGS += -lcurl
+endif
 
 .PHONY: build
 build: libnovas.a $(TESTS)
@@ -20,8 +23,8 @@ build: libnovas.a $(TESTS)
 run: build
 	@for prog in $(TESTS) ; do ./$${prog} || exit 1 ; done
 
-%Test: %Test.cpp $(CPP_OBJECTS)
-	$(CXX) -o $@ $(CPPFLAGS) -g $(CXXFLAGS) $^ $(LDFLAGS) libnovas.a
+%Test: %Test.cpp $(CPP_OBJECTS) libnovas.a 
+	$(CXX) -o $@ $(CPPFLAGS) -g $(CXXFLAGS) $^ $(LDFLAGS)
 
 libnovas.a: $(OBJECTS)
 	ar -rc $@ $^

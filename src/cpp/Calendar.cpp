@@ -674,11 +674,15 @@ Time CalendarDate::to_time(int leap_seconds, double dut1, novas_timescale timesc
  * accuracy at the 0.1 ms level only, hence the resulting astronomical time will be limited
  * to the same level of precision also.
  *
- * @param eop             Earth Orientation Parameters (EOP) for this date.
- * @param timescale       the astronomical timescale in which this calendar date is defined.
+ * @param eop             (optional) Earth Orientation Parameters (EOP) for this date, or
+ *                        EOP::undefined() to fetch from IERS if possible and allowed.
+ * @param timescale       (optional) the astronomical timescale in which this calendar date is
+ *                        defined (default: UTC).
  * @return                an astronomical time instance for this date and input parameters.
  *
  * @since 1.6
+ *
+ * @sa novas_set_auto_fetch_eop()
  */
 Time CalendarDate::to_time(const EOP& eop, novas_timescale timescale) const {
   return to_time(eop.leap_seconds(), eop.dUT1().seconds(), timescale);

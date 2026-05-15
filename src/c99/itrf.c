@@ -298,7 +298,7 @@ int novas_itrf_transform(int from_year, const double *restrict from_coords, cons
  * @since 1.5
  * @author Attila Kovacs
  *
- * @sa novas_itrf_transform(), novas_itrf_transform_site()
+ * @sa novas_itrf_transform(), novas_itrf_transform_site(), novas_get_eop_itrf_year()
  * @sa novas_make_frame(), novas_timespec, wobble()
  */
 int novas_itrf_transform_eop(int from_year, double from_xp, double from_yp, double from_dut1,

@@ -5,9 +5,8 @@
 # You can include this snipplet in your Makefile also.
 # ============================================================================
 
-# Folders for compiled objects, libraries, and binaries, respectively 
+# Folders for compiled objects
 OBJ ?= obj
-BIN ?= bin
 
 # Default compiler to use (if not defined externally)
 CC ?= gcc
@@ -64,6 +63,12 @@ CFLAGS ?= -g -Os -Wall
 #CSPICE_SUPPORT = 1
 
 
+# Build with cURL support for obtaining EOP data from IERS. If you don't
+# have access to curl, and do not need the functionality, you may disable
+# it by setting it to 0.
+CURL_SUPPORT = 1
+
+
 # cppcheck options for 'check' target. You can add additional options by
 # setting the CHECKEXTRA variable (e.g. in shell) prior to invoking 'make'.
 LANGUAGE ?= c
@@ -72,13 +77,15 @@ CHECKOPTS ?= --enable=performance,warning,portability,style --language=$(LANGUAG
             --error-exitcode=1 --std=c99
 
 
-# Add-on ccpcheck options
+# Add-on ccpcheck option	@$(MAKE) -s -C t cleans
 CHECKOPTS += --inline-suppr $(CHECKEXTRA)
 
 
 # Exhaustive checking for newer cppcheck...
 #CHECKOPTS += --check-level=exhaustive
 
+# Use static linking
+#STATIC_LINK = 1
 
 # ============================================================================
 # END of user config section. 
@@ -170,10 +177,16 @@ endif
 SOURCES = target.c observer.c earth.c equator.c system.c transform.c cio.c \
           orbital.c spectral.c grav.c nutation.c timescale.c frames.c place.c \
           calendar.c refract.c naif.c parse.c util.c planets.c itrf.c \
-          ephemeris.c solsys3.c solsys-ephem.c moon.c cmp.c
+          ephemeris.c solsys3.c solsys-ephem.c moon.c cmp.c iers.c
 
 # Generate a list of object (obj/*.o) files from the input sources
 OBJECTS := $(addprefix $(OBJ)/,$(subst .c,.o,$(SOURCES)))
+
+ifeq ($(STATIC_LINK),1)
+  LIB_TARGET := static
+else
+  LIB_TARGET := shared
+endif
 
 # Default values for install locations
 # See https://www.gnu.org/prep/standards/html_node/Directory-Variables.html 

@@ -36,6 +36,7 @@ include(FeatureSummary)
 
 # Build options
 option(BUILD_SHARED_LIBS "Build as shared libraries instead of static" OFF)
+option(BUILD_TOOLS "Build command-line tools" ON)
 option(BUILD_DOC "Build HTML documetation" OFF)
 option(BUILD_TESTING "Build regression test suite" ON)
 option(BUILD_EXAMPLES "Build example programs" OFF)
@@ -43,10 +44,11 @@ option(BUILD_BENCHMARK "Build benchmark programs" OFF)
 option(ENABLE_CPP "Enable C++ library build (supernovas++ library)" OFF)
 option(ENABLE_CALCEPH "Enable CALCEPH support (solsys-calceph plugin)" OFF)
 option(ENABLE_CSPICE "Enable CSPICE support (solsys-cspice plugin)" OFF)
-
+option(ENABLE_TESTING_ONLINE "Run online tests requiring internet access" OFF)
 
 # Set feature descriptions for summary
 add_feature_info(SharedLibs BUILD_SHARED_LIBS "Build as shared libraries")
+add_feature_info(SharedLibs BUILD_TOOLS "Build command-line tools")
 add_feature_info(Documentation BUILD_DOC "Developer documentation (HTML)")
 add_feature_info(Testing BUILD_TESTING "Run regression testing")
 add_feature_info(Examples BUILD_EXAMPLES "Build and test example programs")
@@ -55,7 +57,7 @@ add_feature_info(Benchmarks BUILD_BENCHMARK "Build benchmarking programs")
 add_feature_info(C++-Libs ENABLE_CPP "Build C++ library also (supernovas++)")
 add_feature_info(Calceph-Plugin ENABLE_CALCEPH "Optional ephemeris support via CALCEPH (solsys-calceph)")
 add_feature_info(CSPICE-Plugin ENABLE_CSPICE "Optional ephemeris support via CSPICE (solsys-cspice)")
-
+add_feature_info(CSPICE-Plugin ENABLE_TESTING_ONLINE "Optional tests requiring internet access")
 
 # ----------------------------------------------------------------------------
 # pkg-config variables
@@ -96,6 +98,8 @@ if(HAS_MATHLIB)
     # [.pc] Link applications against math lib...
     string(APPEND PC_LIBS_PRIVATE -l${MATHLIB} " ")
 endif()
+
+check_library_exists(curl curl_init "" HAS_CURL)
 
 if(ENABLE_CALCEPH OR ENABLE_CSPICE)
     find_package(Threads)

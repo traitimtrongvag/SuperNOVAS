@@ -516,7 +516,7 @@ int novas_frame_is_initialized(const novas_frame *frame) {
  *
  * @sa novas_change_observer(), novas_sky_pos(), novas_geom_posvel(), novas_make_transform()
  * @sa set_planet_provider(), set_planet_provider_hp(), set_nutation_lp_provider(),
- *     novas_itrf_transform_eop()
+ *     novas_itrf_transform_eop(), novas_set_auto_fetch_eop()
  */
 int novas_make_frame(enum novas_accuracy accuracy, const observer *obs, const novas_timespec *time, double xp, double yp,
         novas_frame *frame) {
@@ -542,6 +542,18 @@ int novas_make_frame(enum novas_accuracy accuracy, const observer *obs, const no
 
   if((unsigned) obs->where >= NOVAS_OBSERVER_PLACES)
     return novas_error(-1, EINVAL, fn, "invalid observer location: %d", obs->where);
+
+  if(novas_is_auto_fetch_eop() && (isnan(xp) || isnan(yp))) {
+    // Fetch EOP from IERS, as needed.
+    novas_eop eop = {};
+    if(novas_fetch_eop(novas_get_time(time, NOVAS_UTC), 0.0, &eop) == 0) {
+      xp = 1e3 * eop.xp;
+      yp = 1e3 * eop.yp;
+    }
+    else {
+      novas_trace_invalid(fn);
+    }
+  }
 
   frame->accuracy = accuracy;
   frame->time = *time;

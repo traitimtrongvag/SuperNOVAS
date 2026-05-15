@@ -46,7 +46,7 @@ jobs:
     - name: install dependencies
       run: |
         sudo apt-get update -q -y 
-        sudo apt-get install -y lcov
+        sudo apt-get install -y lcov libcurl4-openssl-dev
 
     - name: Run regression tests
       run: make test
@@ -68,7 +68,7 @@ jobs:
       continue-on-error: true
       uses: coverallsapp/github-action@v2
 
-  test-linux:
+  test-arch:
     name: Linux ${{ matrix.arch }}
     runs-on: ubuntu-latest
     strategy:
@@ -93,9 +93,10 @@ jobs:
           distro: ${{ matrix.distro }}
           install: |
             apt-get update -q -y
-            apt-get install -q -y make gcc g++ gfortran
+            apt-get install -q -y make gcc g++ gfortran libcurl4-openssl-dev libcurl4-openssl-dev
           run: |
             export ENABLE_CPP=1
+            export CPPFLAGS=-DOFFLINE=1
             make test
 
   test-macos:
@@ -104,7 +105,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Build and test on macOS
-        run: make test
+        run: |
+          export ENABLE_CPP=1
+          make test
 
   test-cmake:
     name: Test with CMake (Ubuntu)
@@ -116,6 +119,11 @@ jobs:
 #        run: |
 #           sudo apt-get update -q -y
 #           sudo apt-get install -y libcalceph-dev
+
+      - name: Install curl
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -y libcurl4-openssl-dev
         
       - name: Build
         run: |
@@ -123,4 +131,4 @@ jobs:
           cmake --build build
           
       - name: Test
-        run: ctest --test-dir build
+        run: ctest --test-dir build --output-on-failure

@@ -31,7 +31,7 @@ else
   CXXFLAGS := $(CFLAGS)
 endif
 
-LDFLAGS += -lm -L$(LIB) -lsupernovas
+LDFLAGS += -lm -lcurl -L$(LIB) -lsupernovas
 
 .PHONY: shared
 shared: $(LIB)/lib$(NAME).$(SOEXT)

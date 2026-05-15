@@ -35,6 +35,12 @@ ifeq ($(CSPICE_SUPPORT), 1)
   SHARED_TARGETS += $(LIB)/libsolsys-cspice.$(SOEXT)
 endif
 
+ifeq ($(CURL_SUPPORT), 0)
+  CPPFLAGS += -DWITHOUT_CURL=1
+else
+  LDFLAGS += -lcurl
+endif
+
 # Shared libraries (versioned and unversioned)
 .PHONY: shared
 shared: $(SHARED_TARGETS)
@@ -51,11 +57,10 @@ solsys: $(SOLSYS_TARGETS)
 .PHONY: all
 all: distro static analyze
 
-
 # Remove intermediates
 .PHONY: clean
 clean:
-	@rm -f $(OBJECTS) Doxyfile.local gmon.out
+	@rm -f $(OBJECTS)
 
 # Remove all generated files
 .PHONY: distclean

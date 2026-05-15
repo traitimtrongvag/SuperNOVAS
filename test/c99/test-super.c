@@ -29,10 +29,25 @@ extern int strncasecmp(const char *s1, const char *s2, size_t n);
 
 #define J2000   NOVAS_JD_J2000
 
+#if defined _WIN32
+#  include <windows.h>
+#  ifndef PATH_MAX
+#    define PATH_MAX MAX_PATH
+#  endif
+#else
+#  include <limits.h>
+#endif
+
 #if defined _WIN32 || defined __CYGWIN__
 #  define PATH_SEP  "\\"
 #else
 #  define PATH_SEP  "/"
+#endif
+
+#ifdef RESOURCES
+static char *resourcePath = RESOURCES;
+#else
+static char *resourcePath = "resources";
 #endif
 
 static char *dataPath;
@@ -114,6 +129,34 @@ static int is_equal(const char *func, double v1, double v2, double prec) {
 
 static double vlen(double *pos) {
   return sqrt(pos[0] * pos[0] + pos[1] * pos[1] + pos[2] * pos[2]);
+}
+
+static char *get_resource(const char *filename, char *path, int len) {
+  FILE *fp;
+  snprintf(path, len, "%s" PATH_SEP "%s", resourcePath, filename);
+  fp = fopen(path, "r");
+  if(fp) {
+    fclose(fp);
+    return path;
+  }
+  return NULL;
+}
+
+static char *get_resource_url(const char *filename) {
+  static char url[PATH_MAX + 10];
+
+  const char *sep = PATH_SEP;
+  char rel[PATH_MAX] = {'\0'}, path[PATH_MAX] = {'\0'};
+  int i;
+
+  if(get_resource(filename, rel, sizeof(rel)) == NULL)
+    return NULL;
+
+  realpath(rel, path);
+  for(i = 0; i < path[i]; i++) if(path[i] == sep[0]) path[i] = '/';
+
+  sprintf(url, "file://%s", path);
+  return url;
 }
 
 static int test_gcrs_j2000_gcrs() {
@@ -5520,7 +5563,6 @@ static int test_equals_orbsys() {
   return n;
 }
 
-
 static int test_equals_orbital() {
   int n = 0;
   novas_orbital_system sys = NOVAS_ORBITAL_SYSTEM_INIT;
@@ -5587,7 +5629,6 @@ static int test_equals_orbital() {
 
   return n;
 }
-
 
 static int test_equals_object() {
   int n = 0;
@@ -5697,6 +5738,8 @@ static int test_equals_frame() {
   novas_timespec ts = {};
   novas_frame a = {}, b;
 
+  novas_set_auto_fetch_eop(0);
+
   make_observer_at_geocenter(&obs);
   novas_set_time(NOVAS_TT, NOVAS_JD_J2000, 32, 0.0, &ts);
   novas_make_frame(NOVAS_REDUCED_ACCURACY, &obs, &ts, 100.0, -200.0, &a);
@@ -5749,8 +5792,130 @@ static int test_equals_frame() {
   b = a; b.dy = -200.0;
   if(!is_ok("equals_frame:earth:dy:!nan", novas_equals_frame(&a, &b) != 0)) n++;
 
+  novas_set_auto_fetch_eop(1);
+
   return n;
 }
+
+static int test_fetch_eop() {
+  int n = 0;
+
+#if !WITHOUT_CURL
+  novas_eop eop = {};
+
+#  if !OFFLINE
+  if(!is_ok("fetch_eop:unix:now", novas_fetch_eop_unix(time(NULL), 0, &eop))) n++;
+#  endif
+
+  if(!is_ok("fetch_eop:set_eop_url:rapid", novas_set_eop_url(EOP_RAPID_IAU2000, 2020, get_resource_url("finals.all.iau2000.txt")))) n++;
+  if(!is_ok("fetch_eop:set_eop_url:c04", novas_set_eop_url(EOP_C04_IAU2000_0UTC, 2008, get_resource_url("EOP_20u24_C04_one_file_1962-now.txt")))) n++;
+  if(!is_ok("fetch_eop:set_eop_url:c01", novas_set_eop_url(EOP_C01_IAU2000, 1900, get_resource_url("EOP_C01_IAU2000_1846-now.txt")))) n++;
+
+  if(!is_equal("fetch_eop:get_eop_itrf_year:rapid", novas_get_eop_itrf_year(EOP_RAPID_IAU2000), 2020, 1e-15)) n++;
+  if(!is_equal("fetch_eop:get_eop_itrf_year:rapid", novas_get_eop_itrf_year(EOP_C04_IAU2000_0UTC), 2008, 1e-15)) n++;
+  if(!is_equal("fetch_eop:get_eop_itrf_year:rapid", novas_get_eop_itrf_year(EOP_C01_IAU2000), 1988, 1e-15)) n++;
+
+  if(!is_ok("fetch_eop:j2000", novas_fetch_eop(NOVAS_JD_J2000, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:j2000:leap", eop.leap, 32, 1e-15)) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:j2000+:reuse", novas_fetch_eop(NOVAS_JD_J2000 + 0.1, 0, &eop))) n++;
+
+  if(!is_ok("fetch_eop:b1950", novas_fetch_eop(NOVAS_JD_B1950, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:b1950:leap", eop.leap, 0, 1e-15)) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:b1900", novas_fetch_eop(NOVAS_JD_B1900, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:b1900:leap", eop.leap, 0, 1e-15)) n++;
+  if(!is_ok("fetch_eop:b1900:dut1", !isnan(eop.dut1))) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:j1962", novas_fetch_eop(NOVAS_JD_MJD0 + 37666, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:j1962:leap", eop.leap, 0, 1e-15)) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:j1961", novas_fetch_eop(NOVAS_JD_MJD0 + 37664, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:j1961:leap", eop.leap, 0, 1e-15)) n++;
+  if(!is_ok("fetch_eop:j1964:dut1", isnan(eop.dut1))) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:j1989", novas_fetch_eop(NOVAS_JD_MJD0 + 11366, 0, &eop))) n++;
+  if(!is_equal("fetch_eop:j1889:leap", eop.leap, 0, 1e-15)) n++;
+  if(!is_ok("fetch_eop:j1889:dut1", !isnan(eop.dut1))) n++;
+  // TODO check jd, dut1, xp, yp.
+
+  if(!is_ok("fetch_eop:timeout", novas_fetch_eop(NOVAS_JD_HIP, 5, &eop))) n++;
+#endif
+
+  novas_reset_eop();
+
+  return n;
+}
+
+static int test_auto_fetch_eop() {
+  int n = 0;
+
+#if !WITHOUT_CURL && !OFFLINE
+  observer obs = {};
+  novas_timespec ts = {};
+  novas_frame frame = {};
+
+  novas_set_auto_fetch_eop(1);
+
+  if(!is_ok("auto_fetch_eop:time", novas_set_time(NOVAS_UTC, NOVAS_JD_J2000, 0, NAN, &ts))) n++;
+  if(!is_equal("auto_fetch_eop:time:leap", novas_time_leap(&ts), 32, 1e-15)) n++;
+
+  make_observer_at_geocenter(&obs);
+  if(!is_ok("auto_fetch_eop:frame", novas_make_frame(NOVAS_REDUCED_ACCURACY, &obs, &ts, NAN, NAN, &frame))) n++;
+  if(!is_ok("auto_fetch_eop:frame:(dx,dy)", isnan(frame.dx) || isnan(frame.dy))) n++;
+
+  if(!is_ok("is_auto_fetch_eop:1", !novas_is_auto_fetch_eop())) n++;
+  if(!is_ok("set_auto_fetch_eop(0)", novas_set_auto_fetch_eop(0))) n++;
+  if(!is_ok("is_auto_fetch_eop:0", novas_is_auto_fetch_eop())) n++;
+
+  if(!is_ok("auto_fetch_eop(0):time", novas_set_time(NOVAS_UTC, NOVAS_JD_J2000, 0, NAN, &ts))) n++;
+  if(!is_ok("auto_fetch_eop(0):dut1", !isnan(ts.dut1))) n++;
+
+  novas_set_time(NOVAS_UTC, NOVAS_JD_J2000, 32, 0.0, &ts);
+  if(!is_ok("auto_fetch_eop(0):frame", novas_make_frame(NOVAS_REDUCED_ACCURACY, &obs, &ts, NAN, NAN, &frame))) n++;
+  if(!is_ok("auto_fetch_eop(0):frame:dx", !isnan(frame.dx))) n++;
+  if(!is_ok("auto_fetch_eop(0):frame:dy", !isnan(frame.dy))) n++;
+
+  if(!is_ok("set_auto_fetch_eop(1)", novas_set_auto_fetch_eop(1))) n++;
+  if(!is_ok("is_auto_fetch_eop:1:again", !novas_is_auto_fetch_eop())) n++;
+#else
+#  if WITHOUT_CURL
+  if(!is_ok("is_auto_fetch_eop", novas_is_auto_fetch_eop())) n++;
+#  endif
+  if(!is_ok("set_auto_fetch_eop(0)", novas_set_auto_fetch_eop(0))) n++;
+  if(!is_ok("is_auto_fetch_eop:0", novas_is_auto_fetch_eop())) n++;
+#endif
+
+  novas_reset_eop();
+
+  return n;
+}
+
+static int test_lookup_leap() {
+  int n = 0;
+  char path[1024] = {'\0'}, *rc;
+
+#if !WITHOUT_CURL && !OFFLINE
+  if(!is_ok("lookup_leap:set_eop_url", novas_set_eop_url(EOP_LEAP_LIST, 1950, NULL))) n++;
+  if(!is_equal("lookup_leap:auto:j2000", novas_lookup_leap(946684800L), 32.0, 1e-15)) n++;
+  if(!is_equal("lookup_leap:auto:1970", novas_lookup_leap(0L), 0.0, 1e-15)) n++;
+#endif
+
+  rc = get_resource("leap-seconds.list", path, sizeof(path));
+  if(!rc) fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", path);
+  else {
+    if(!is_ok("set_leap_list", novas_set_leap_list(path))) return ++n;
+    if(!is_equal("lookup_leap:offline:j2000", novas_lookup_leap(946684800L), 32.0, 1e-15)) n++;
+  }
+
+  return n;
+}
+
 
 int main(int argc, char *argv[]) {
   int n = 0;
@@ -5939,6 +6104,10 @@ int main(int argc, char *argv[]) {
   if(test_equals_sky_pos()) n++;
   if(test_equals_planet_bundle()) n++;
   if(test_equals_frame()) n++;
+
+  if(test_fetch_eop()) n++;
+  if(test_auto_fetch_eop()) n++;
+  if(test_lookup_leap()) n++;
 
   n += test_dates();
 

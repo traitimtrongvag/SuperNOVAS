@@ -146,7 +146,7 @@ bool Observer::operator!=(const Observer& other) const {
  * provider is configured prior, to the call.
  *
  * @param time      Astrometric time of observation
- * @param accuracy  NOVAS_FULL_ACCYRACY (default) or NOVAS_REDUCED_ACCURACY
+ * @param accuracy  (optional) NOVAS_FULL_ACCYRACY (default) or NOVAS_REDUCED_ACCURACY
  * @return          An observing frame, which may be invaliud if a valid observing frame
  *                  could not be created with the accuracy, for example because no high
  *                  accuracy planetary position provider was specified, or because either this
@@ -346,8 +346,10 @@ std::string Observer::to_string() const {
  * Returns a new observer located at a fixed observing site.
  *
  * @param site    the observing site
- * @param eop     Earth Orientation Parameters (EOP) appropriate the time of observation, such as
- *                obtained from the IERS bulletins or data service.
+ * @param eop     (optional) Mean (preferably interpolated) Earth Orientation Parameters (EOP)
+ *                appropriate around the time of observation, such as obtained from the IERS
+ *                bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                offsets from IERS as needed (default: undefined).
  * @return        a new observer instance for the given observing site.
  *
  * @since 1.6
@@ -367,8 +369,10 @@ GeodeticObserver Observer::on_earth(const Site& site, const EOP& eop) {
  * @param geodetic    the momentary geodetic location of the observer.
  * @param itrs_vel    the momentary velocity of the observer with respect to the surface
  *                    (in ITRS).
- * @param eop         Earth Orientation Parameters (EOP) appropriate around the time of
- *                    observation, such as obtained from the IERS bulletins or data service.
+ * @param eop         (optional) Mean (preferably interpolated) Earth Orientation Parameters (EOP)
+ *                    appropriate around the time of observation, such as obtained from the IERS
+ *                    bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                    offsets from IERS as needed (default: undefined).
  * @return            a new observer instance for the given moving observer.
  *
  * @since 1.6
@@ -386,8 +390,10 @@ GeodeticObserver Observer::moving_on_earth(const Site& geodetic, const Velocity&
  * observer.
  *
  * @param site          the momentary geodetic location of the observer.
- * @param eop           Earth Orientation Parameters (EOP) appropriate around the time of
- *                      observation.
+ * @param eop           Mean (preferably interpolated) Earth Orientation Parameters (EOP)
+ *                      appropriate around the time of observation, such as obtained from the IERS
+ *                      bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                      offsets from IERS as needed
  * @param horizontal    momentary horizontal speed of moving observer.
  * @param direction     azimuthal direction of motion (from North, measured to the East).
  * @param vertical      (optional) momentary vertical speed of observer (default: 0).
@@ -659,11 +665,14 @@ std::string SolarSystemObserver::to_string() const {
  * Instantiates a new observer at a fixed location on Earth.
  *
  * @param site    the observing site
- * @param eop     Mean (preferably interpolated) Earth Orientation Parameters (EOP) appropriate
- *                around the time of observation, such as obtained from the IERS bulletins or
- *                data service.
+ * @param eop     (optional) Mean (preferably interpolated) Earth Orientation Parameters (EOP)
+ *                appropriate around the time of observation, such as obtained from the IERS
+ *                bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                offsets from IERS as needed (default: undefined).
  *
  * @since 1.6
+ *
+ * @sa novas_set_auto_fetch_eop()
  */
 GeodeticObserver::GeodeticObserver(const Site& site, const EOP& eop)
 : Observer(NOVAS_OBSERVER_ON_EARTH, site, Position::origin(), Velocity::stationary()), _eop(eop) {
@@ -671,8 +680,8 @@ GeodeticObserver::GeodeticObserver(const Site& site, const EOP& eop)
 
   if(!site.is_valid())
     novas_set_errno(EINVAL, fn, "input site is invalid");
-  else if(!eop.is_valid())
-    novas_set_errno(EINVAL, fn, "input EOP is invalid");
+  else if(!novas_is_auto_fetch_eop() && !eop.is_valid())
+    novas_set_errno(EINVAL, fn, "input EOP is invalid and automatic fetching is disabled");
   else
     _valid = true;
 }
@@ -683,12 +692,13 @@ GeodeticObserver::GeodeticObserver(const Site& site, const EOP& eop)
  *
  * @param site    the momentary geodetic location of the observer
  * @param vel     the momentaty velocity of the observer relative to Earth's surface (in ITRS),
- * @param eop     Mean (preferably interpolated) Earth Orientation Parameters (EOP) appropriate
- *                around the time of observation, such as obtained from the IERS bulletins or
- *                data service.
+ * @param eop     (optional) Mean (preferably interpolated) Earth Orientation Parameters (EOP)
+ *                appropriate around the time of observation, such as obtained from the IERS
+ *                bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                offsets from IERS as needed (default: undefined).
  *
  * @since 1.6
- * @sa Site::enu_to_itrf()
+ * @sa Site::enu_to_itrf(), novas_set_auto_fetch_eop()
  */
 GeodeticObserver::GeodeticObserver(const Site& site, const Velocity& vel, const EOP& eop)
 : Observer(NOVAS_AIRBORNE_OBSERVER, site, Position::origin(), vel), _eop(eop) {
@@ -698,8 +708,8 @@ GeodeticObserver::GeodeticObserver(const Site& site, const Velocity& vel, const 
 
   if(!site.is_valid())
     novas_set_errno(EINVAL, fn, "input site is invalid");
-  else if(!eop.is_valid())
-    novas_set_errno(EINVAL, fn, "input EOP is invalid");
+  else if(!novas_is_auto_fetch_eop() && !eop.is_valid())
+    novas_set_errno(EINVAL, fn, "input EOP is invalid and automatic fetching is disdabled");
   else if(!vel.is_valid())
     novas_set_errno(EINVAL, fn, "input velocity contains NAN component(s)");
   else
@@ -713,13 +723,14 @@ GeodeticObserver::GeodeticObserver(const Site& site, const Velocity& vel, const 
  * @param site          the momentary geodetic location of the observer.
  * @param eop           Mean (preferably interpolated) Earth Orientation Parameters (EOP)
  *                      appropriate around the time of observation, such as obtained from the IERS
- *                      bulletins or data service.
+ *                      bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                      offsets from IERS as needed.
  * @param horizontal    momentary horizontal speed of moving observer.
  * @param direction     azimuthal direction of motion (from North, measured to the East).
  * @param vertical      (optional) momentary vertical speed of observer (default: 0).
  *
  * @since 1.6
- * @sa Site::enu_to_itrf()
+ * @sa Site::enu_to_itrf(), novas_set_auto_fetch_eop()
  */
 GeodeticObserver::GeodeticObserver(const Site& site, const EOP& eop, const ScalarVelocity& horizontal, const Angle& direction, const ScalarVelocity& vertical)
 : GeodeticObserver(site, Velocity::stationary(), eop) {
@@ -890,6 +901,8 @@ GeocentricObserver GeodeticObserver::to_geocentric_at(const Time& time, enum nov
  * @sa eop_at()
  */
 const EOP& GeodeticObserver::mean_eop() const {
+  if(novas_is_auto_fetch_eop() && !_eop.is_valid())
+    novas_set_errno(EDOM, "GeodeticObserver::mean_eop()", "EOP is undefined (auto-fetch)");
   return _eop;
 }
 
@@ -904,10 +917,33 @@ const EOP& GeodeticObserver::mean_eop() const {
  * @sa mean_eop()
  */
 EOP GeodeticObserver::eop_at(const Time& time) const {
-  double dx = 0.0, dy = 0.0, dut = 0.0;
-  novas_diurnal_eop_at_time(time._novas_timespec(), &dx, &dy, &dut);
-  const EOP& m = mean_eop();
-  return EOP(time.leap_seconds(), time.dUT1().seconds() + dut, m.xp().rad() + dx * Unit::arcsec, m.yp().rad() + dy * Unit::arcsec);
+  long leap = -1;
+  double xp = NAN, yp = NAN, dut1 = NAN;
+
+  if(_eop.is_valid()) {
+    leap = _eop.leap_seconds();
+    dut1 = _eop.dUT1().seconds();
+    xp = _eop.xp().rad();
+    yp = _eop.yp().rad();
+  }
+  else if(novas_is_auto_fetch_eop()) {
+    // Fetch from IERS, if possible -- including the rotational parameters
+    novas_eop e = {};
+    novas_fetch_eop(time.jd(NOVAS_UTC), 0, &e);
+    leap = e.leap;
+    dut1 = e.dut1;
+    xp = e.xp * Unit::arcsec;
+    yp = e.yp * Unit::arcsec;
+  }
+
+  double dx = 0.0, dy = 0.0, ddut = 0.0;
+  novas_diurnal_eop_at_time(time._novas_timespec(), &dx, &dy, &ddut);
+
+  EOP eop = EOP(leap, dut1 + ddut, xp + dx * Unit::arcsec, yp + dy * Unit::arcsec);
+  if(!eop.is_valid())
+    novas_trace_invalid("GeodeticObserver::eop_at()");
+
+  return eop;
 }
 
 /**

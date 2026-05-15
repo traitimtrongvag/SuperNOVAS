@@ -135,7 +135,6 @@ int main() {
   if(!test.check("copy(moving)", *copy == g2)) n++;
   delete copy;
 
-
   double v_enu[3] = {1.0, -2.0, 3.0}, v_itrs[3] = {0.0};
   novas_enu_to_itrs(v_enu, site.longitude().deg(), site.latitude().deg(), v_itrs);
   GeodeticObserver g3 = Observer::moving_on_earth(site, eop, ScalarVelocity(hypot(v_enu[0], v_enu[1]) * Unit::km_per_s), Angle(atan2(v_enu[0], v_enu[1])), ScalarVelocity(3.0 * Unit::km_per_s));
@@ -144,6 +143,19 @@ int main() {
   if(!test.check("itrs_velocity(moving ENU)", g3.itrs_velocity() == Velocity(v_itrs, Unit::km_per_s))) n++;
   if(!test.equals("to_string(moving ENU)", g3.to_string(),
           "GeodeticObserver at Site (W 114d 35m 29.612s, N  57d 17m 44.806s, altitude 75 m) moving at ENU Velocity (1.000 km/s, -2.000 km/s, 3.000 km/s)")) n++;
+
+#if !WITHOUR_CURL && !OFFLINE
+  if(!test.check("[enable fetch EOP]", novas_set_auto_fetch_eop(1) == 0)) n++;
+  GeodeticObserver g4 = Observer::on_earth(site);
+  if(!test.check("is_valid(no-EOP)", g4.is_valid())) n++;
+  if(!test.check("mean_eop()", !g4.mean_eop().is_valid())) n++;
+  if(!test.check("eop_at()", g4.eop_at(Time::j2000()).is_valid())) n++;
+  if(!test.equals("eop_at().leap_seconds()", g4.eop_at(Time::j2000()).leap_seconds(), 32)) n++;
+  novas_set_auto_fetch_eop(0);
+#endif // WITH_CURL && !OFFLINE
+
+
+  test = TestUtil("GeocentricObserver");
 
   GeocentricObserver gc = Observer::at_geocenter();
   if(!test.check("is_valid(gc)", gc.is_valid())) n++;
@@ -166,8 +178,6 @@ int main() {
 
   o = gc._novas_observer();
   if(!test.check("_novas_observer(gc)", o != NULL && o->where == NOVAS_OBSERVER_AT_GEOCENTER)) n++;
-
-  test = TestUtil("GeocentricObserver");
 
   Position p1(10000.0 * Unit::km, 0.0, 0.0);
 

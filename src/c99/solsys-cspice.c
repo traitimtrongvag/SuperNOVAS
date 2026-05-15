@@ -59,7 +59,7 @@
 #include <errno.h>
 
 /// \cond PRIVATE
-#if defined(SUPERNOVAS_USE_THREAD) || defined(__unix__) || defined(__unix) || defined(__APPLE__)
+#if defined(SUPERNOVAS_USE_PTHREAD) || defined(__unix__) || defined(__unix) || defined(__APPLE__)
 #  include <pthread.h>
 
 #  define init_lock(x)        pthread_mutex_init(x, (void *) 0)

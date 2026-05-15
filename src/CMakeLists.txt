@@ -34,11 +34,15 @@ set(SUPERNOVAS_CORE_SOURCES
     solsys-ephem.c
     moon.c
     cmp.c
+    iers.c
 )
-
 
 add_subdirectory(c99)
 
 if(ENABLE_CPP)
     add_subdirectory(cpp)
+endif()
+
+if(BUILD_TOOLS)
+    add_subdirectory(tools)
 endif()

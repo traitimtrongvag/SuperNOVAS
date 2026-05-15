@@ -10,7 +10,7 @@ include ../../config.mk
 # Our own include directory
 CPPFLAGS += -I../../include
 CFLAGS += -I../../include -I../../legacy -pg -Wall
-LDFLAGS += -lm -fprofile-arcs -ftest-coverage
+LDFLAGS += -lm -lcurl -fprofile-arcs -ftest-coverage
 
 # cppcheck options for 'check' target. You can add additional options by
 # setting the CHECKEXTRA variable (e.g. in shell) prior to invoking 'make'.
@@ -36,6 +36,10 @@ ifeq ($(CSPICE_SUPPORT), 1)
   COVFILES += solsys-cspice.c.gcov
 endif
 
+ifeq ($(CURL_SUPPORT), 1)
+  TESTS += test-dummy-curl
+endif
+
 .PHONY: run
 run: clean-cov clean-data $(TESTS)
 	@mkdir data
@@ -48,6 +52,9 @@ ifeq ($(CALCEPH_SUPPORT), 1)
 endif
 ifeq ($(CSPICE_SUPPORT), 1)
 	./test-cspice ../ephem
+endif
+ifeq ($(CURL_SUPPORT), 1)
+	./test-dummy-curl
 endif
 
 .PHONY: check-compat

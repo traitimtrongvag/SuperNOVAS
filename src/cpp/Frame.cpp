@@ -46,15 +46,22 @@ namespace supernovas {
  * @param obs         observer location
  * @param time        time of observation
  * @param accuracy    (optional) NOVAS_FULL_ACCURACY (default) or NOVAS_REDUCED_ACCURACY.
+ * @param eop         (optional) Earth Orientation Parameters (polar offsets) to assume for non
+ *                    geodetic observers. Typically, an observer that is not referenced to Earth's
+ *                    surface should not need EOP. However, the user may supply the polar offsets
+ *                    _x_<sub>p</sub>, _y_<sub>p</sub> here to use in the unlikely case they want
+ *                    to transform geometric positions for a space-based observer to/from the
+ *                    Earth-fixed ITRS with sub-arcsecond level accuracy (since 1.7).
  *
  * @since 1.6
  * @sa Observer::frame_at(), reduced_accuracy(), @ref solar-system
+ * @sa novas_set_auto_fetch_eop()
  */
-Frame::Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy)
+Frame::Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy, const EOP& eop)
 : _observer(obs.copy()), _time(time) {
   static const char *fn = "Frame()";
 
-  double xp = NAN, yp = NAN;
+  double xp = 0.0, yp = 0.0; // Default (non-fetching) values for non-geodetic observers
 
   errno = 0;
 
@@ -63,6 +70,10 @@ Frame::Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy
     xp = go->mean_eop().xp().mas();
     yp = go->mean_eop().yp().mas();
   }
+  else if(eop.is_valid()) {
+    xp = eop.xp().mas();
+    yp = eop.yp().mas();
+  }
 
   if(novas_make_frame(accuracy, obs._novas_observer(), time._novas_timespec(), xp, yp, &_frame) != 0)
     novas_trace_invalid(fn);
@@ -70,6 +81,11 @@ Frame::Frame(const Observer& obs, const Time& time, enum novas_accuracy accuracy
     novas_set_errno(EINVAL, fn, "input observer is invalid");
   if(!time.is_valid())
     novas_set_errno(EINVAL, fn, "input time is invalid");
+
+  if(!obs.is_geodetic()) {
+    // Leave polar offsets undefined for non-geodetic observing frames.
+    _frame.dx = _frame.dy = NAN;
+  }
 
   _valid = (errno == 0);
 }
@@ -427,13 +443,17 @@ Apparent Frame::apparent_moon_elp2000(double limit_term) const {
  *
  * @param obs       %Observer location
  * @param time      Astrometric time of observation
+ * @param eop       (optional) Mean (preferably interpolated) Earth Orientation Parameters (EOP)
+ *                  appropriate around the time of observation, such as obtained from the IERS
+ *                  bulletins or data service, or EOP::undefined() to let `Frame` fetch polar
+ *                  offsets from IERS as needed (default: undefined).
  * @return          A reduced accuracy observing frame for the specified time of observation.
  *
  * @since 1.6
  * @sa Observer::reduced_accuracy_frame_at()
  */
-Frame Frame::reduced_accuracy(const Observer& obs, const Time& time) {
-  Frame f(obs, time, NOVAS_REDUCED_ACCURACY);
+Frame Frame::reduced_accuracy(const Observer& obs, const Time& time, const EOP& eop) {
+  Frame f(obs, time, NOVAS_REDUCED_ACCURACY, eop);
   if(!f.is_valid())
     novas_trace_invalid("Frame::reduced_accuracy()");
   return f;

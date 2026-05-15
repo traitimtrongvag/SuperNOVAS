@@ -350,12 +350,13 @@ Weather Site::average_weather() const {
  * Returns an observer location for this observing site and the specified IERS Earth Orientation
  * Parameters (EOP).
  *
- * @param eop     Earth Orientation Parameters (EOP) from IERS, for the same ITRF realization as
- *                this site (if &mu;as precision is required).
+ * @param eop     (optional) Earth Orientation Parameters (EOP) from IERS, for the same ITRF realization
+ *                as this site (if &mu;as precision is required), or EOP::undefined() to fetch current
+ *                (presently ITRF2020) values from IERS if possible and allowed (default: undefined).
  * @return        A geodetic observer location for this site.
  *
  * @since 1.6
- * @sa Observer::on_earth()
+ * @sa Observer::on_earth(), novas_set_auto_fetch_eop()
  */
 GeodeticObserver Site::to_observer(const EOP& eop) const {
   GeodeticObserver go = Observer::on_earth(*this, eop);
