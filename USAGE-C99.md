@@ -391,7 +391,8 @@ e.g.:
 ```
 
 You can also disable the automatic fetch and replacement of NAN `dut1` values by calling 
-`novas_set_auto_fetch_eop(0)`.
+`novas_set_auto_fetch_eop(0)`. See \ref earth for the set of functions that can be used for fetching appropriate 
+values for the leap seconds and the UT1-UTC time difference from local or external sources.
 
 <a name="observing-frame-c99"></a>
 #### Set up the observing frame
@@ -430,6 +431,9 @@ check the return status after, e.g.:
    return -1;
  }
 ```
+
+See \ref earth for the set of functions that can be used for fetching appropriate EOP values from local or external 
+sources.
 
 The advantage of using the observing frame, is that it enables very fast position calculations for multiple objects
 in that frame (see the [benchmarks](#benchmarks)), since all sources in a frame have well-defined, fixed, topological 

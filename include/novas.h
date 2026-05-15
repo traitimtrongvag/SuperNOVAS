@@ -3511,7 +3511,7 @@ int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop);
 int novas_fetch_eop_unix(time_t t, long timeout_millis, novas_eop *eop);
 
 /// @c_earth
-void novas_cleanup_eop();
+void novas_reset_eop();
 
 /// @ingroup earth
 int novas_set_auto_fetch_eop(int enabled);

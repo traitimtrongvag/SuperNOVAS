@@ -2845,9 +2845,7 @@ static int test_fetch_eop() {
   }
 
   // Reset EOP URLs to their defaults
-  novas_set_eop_url(EOP_C04_IAU2000_0UTC, 0, NULL);
-  novas_set_eop_url(EOP_C01_IAU2000, 0, NULL);
-  novas_set_eop_url(EOP_RAPID_IAU2000, 0, NULL);
+  novas_reset_eop();
 
   if(check("fetch_eop:set_eop_url:empty", -1, novas_set_eop_url(EOP_LEAP_LIST, 0, get_resource_url("leap-seconds.empty")))) n++;
   novas_set_leap_list(NULL);

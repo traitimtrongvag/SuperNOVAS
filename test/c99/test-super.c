@@ -5845,14 +5845,9 @@ static int test_fetch_eop() {
   // TODO check jd, dut1, xp, yp.
 
   if(!is_ok("fetch_eop:timeout", novas_fetch_eop(NOVAS_JD_HIP, 5, &eop))) n++;
-
-  // Reset EOP URLs to their defaults
-  novas_set_eop_url(EOP_C04_IAU2000_0UTC, 0, NULL);
-  novas_set_eop_url(EOP_C01_IAU2000, 0, NULL);
-  novas_set_eop_url(EOP_RAPID_IAU2000, 0, NULL);
 #endif
 
-  novas_cleanup_eop();
+  novas_reset_eop();
 
   return n;
 }
@@ -5896,7 +5891,7 @@ static int test_auto_fetch_eop() {
   if(!is_ok("is_auto_fetch_eop:0", novas_is_auto_fetch_eop())) n++;
 #endif
 
-  novas_cleanup_eop();
+  novas_reset_eop();
 
   return n;
 }

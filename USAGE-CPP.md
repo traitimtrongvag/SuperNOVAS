@@ -367,8 +367,9 @@ As of v1.7, you may omit the optional `EOP` parameter in `Site::to_observer()`. 
 with that geodetic observer location will automatically fetch appropriate polar offsets from IERS if possible (and 
 provided you did not call `novas_set_auto_fetch_eop(0)` to disable it). You can use your own URLs (such as on a local 
 server) instead of the default ones with `novas_set_eop_url()` for faster / more reliable EOP lookup. Note, however, 
-that that this will add arbitrary latencies and a source of indeterminacy into your application also.
-
+that that this will add arbitrary latencies and a source of indeterminacy into your application also. See \ref earth 
+for the set of functions and methods that can be used for fetching EOP from local or external sources as needed for 
+a time of observation specified later.
 
 ##### B. other observer locations
 
@@ -433,7 +434,8 @@ check for validity after, e.g.:
 ```
 
 You can also disable the automatic fetch and replacement of NAN `dut1` values by calling 
-`novas_set_auto_fetch_eop(0)`.
+`novas_set_auto_fetch_eop(0)`. See \ref earth for the set of functions and methods that can be used for fetching 
+appropriate values for leap seconds or the UT1-UTC time difference from local or external sources.
 
 
 <a name="observing-frame-cpp"></a>

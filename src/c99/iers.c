@@ -30,6 +30,52 @@
 #include "novas.h"
 
 /// \cond PRIVATE
+#if defined(SUPERNOVAS_USE_PTHREAD) || defined(__unix__) || defined(__unix) || defined(__APPLE__)
+#  include <pthread.h>
+
+#  define novas_init_lock(x)    pthread_mutex_init(x, NULL)
+#  define novas_lock            pthread_mutex_lock
+#  define novas_unlock          pthread_mutex_unlock
+#  define novas_destroy_lock    pthread_mutex_destroy
+#  define THREAD_SAFE           1
+
+typedef pthread_mutex_t       lock_type;
+
+#elif __STDC_VERSION__ >= 201112L
+#  include <threads.h>
+
+#  define novas_init_lock(x)    mtx_init(x, mtx_plain)
+#  define novas_lock            mtx_lock
+#  define novas_unlock          mtx_unlock
+#  define novas_destroy_lock    mtx_destroy
+
+#  define THREAD_SAFE           1
+
+typedef mtx_t                   lock_type;
+
+#elif defined(WIN32)
+#include <windows.h>
+
+#  define novas_init_lock(x)    InitializeSRWLock(x)
+#  define novas_lock            AcquireSRWLockExclusive
+#  define novas_unlock          ReleaseSRWLockExclusive
+#  define novas_destroy_lock(x)
+#  define THREAD_SAFE           1
+
+typedef SRWLOCK                 lock_type;
+
+#else
+#  define novas_lock(x)
+#  define novas_unlock(x)
+#  define novas_destroy_lock(x)
+#  define THREAD_SAFE           0
+
+typedef int                     lock_type;
+
+#endif
+/// \endcond
+
+/// \cond PRIVATE
 
 #  if SKIP_IERS_DNS_LOOKUP
 #    define IERS_DATACENTER         "141.74.67.212"       ///< datacenter.iers.org
@@ -62,8 +108,11 @@ typedef struct iers_leap_entry {
 
 /// \endcond
 
-static iers_leap_entry *leaps;    ///< Leap seconds list
-static time_t leap_expiration;    ///< UNIX time at which leap seconds list expires.
+static iers_leap_entry *leaps;      ///< Leap seconds list
+static time_t leap_expiration;      ///< UNIX time at which leap seconds list expires.
+static lock_type leap_mutex;        ///< mutex for leap seconds data
+static int leap_mutex_initialized;  ///< whether the leap mutex was initialized;
+
 
 // ---------------------------------------------------------------------------
 #if !WITHOUT_CURL
@@ -140,12 +189,25 @@ static iers_data_file c01 = { NULL, EOP_C01_IAU2000,
         0, 12, 71, 22, 83, 32, 93, 226, 281
 };
 
-static int auto_fetch_eop = 1;    /// Enable fetching EOP from IERS as needed by default
+static int auto_fetch_eop = 1;    ///< Enable fetching EOP from IERS as needed by default
+static lock_type eop_mutex;       ///< Mutex for EOP data (excl. leap) access
+static int eop_mutex_initialized;  ///< Whether EOP mutex was initialized
 
 /// \endcond
 #endif /* !WITHOUT_CURL */
 // ---------------------------------------------------------------------------
 
+static void lock_leap() {
+  if(!leap_mutex_initialized) {
+    novas_init_lock(&leap_mutex);
+    leap_mutex_initialized = 1;
+  }
+  novas_lock(&leap_mutex);
+}
+
+static void unlock_leap() {
+  novas_unlock(&leap_mutex);
+}
 
 static void destroy_leap_list(iers_leap_entry *list) {
   while(list) {
@@ -155,12 +217,22 @@ static void destroy_leap_list(iers_leap_entry *list) {
   }
 }
 
+static void cleanup_leaps_async() {
+  destroy_leap_list(leaps);
+}
+
 static void set_leap_list_async(iers_leap_entry *list, long long expiration) {
-  // TODO mutex
+  static int initialized;
+
+  if(!initialized) {
+    atexit(cleanup_leaps_async);
+    initialized = 1;
+  }
+
   iers_leap_entry *obsolete = leaps;
   leaps = list;
   leap_expiration = expiration;
-  // ---
+
   destroy_leap_list(obsolete);
 }
 
@@ -218,6 +290,18 @@ static iers_leap_entry *parse_leap_file(FILE *fp, long long *expiration) {
 
 // ---------------------------------------------------------------------------
 #if !WITHOUT_CURL
+
+static void lock_eop() {
+  if(!eop_mutex_initialized) {
+    novas_init_lock(&eop_mutex);
+    eop_mutex_initialized = 1;
+  }
+  novas_lock(&eop_mutex);
+}
+
+static void unlock_eop() {
+  novas_unlock(&eop_mutex);
+}
 
 static size_t write_to_buffer(const char *ptr, size_t size, size_t nmemb, void *userdata) {
   download_buffer *data = (download_buffer *) userdata;
@@ -291,9 +375,30 @@ static iers_leap_entry *fetch_leaps_async(long long *expiration) {
   return list;
 }
 
+static void cleanup_handle_async(iers_data_file *file) {
+  CURL *curl = file->curl;
+
+  if(!curl)
+    return;
+
+  file->curl = NULL;
+  if(file->head_bytes)
+    file->head_bytes = -1;
+
+  curl_easy_cleanup(curl);
+}
+
+static void cleanup_eop_handles_async() {
+  cleanup_handle_async(&rapid);
+  cleanup_handle_async(&c04);
+  cleanup_handle_async(&c01);
+  cleanup_handle_async(&c01_sparse);
+}
+
 static int novas_fetch_eop_chunk(CURL **restrict pCurl, const char *restrict url, long offset, int len, download_buffer *restrict data,
         long timeout_millis) {
   static const char *fn = "novas_fetch_eop_chunk";
+  static int initialized;
 
   CURL *curl;
   CURLcode res;
@@ -305,6 +410,11 @@ static int novas_fetch_eop_chunk(CURL **restrict pCurl, const char *restrict url
   curl = *pCurl;
   if (!curl)
     return novas_trace(fn, -1, 0);
+
+  if(!initialized) {
+    atexit(cleanup_eop_handles_async);
+    initialized = 1;
+  }
 
   snprintf(range, sizeof(range), "%ld-%ld", offset, (offset + len - 1));
 
@@ -383,7 +493,7 @@ static int eop_parse_line(const iers_data_file *restrict file, int line, char *s
   return 0;
 }
 
-static int checkout_eop_file(iers_data_file *restrict file, long timeout_millis) {
+static int checkout_eop_file_async(iers_data_file *restrict file, long timeout_millis) {
   static const char *fn = "set_eop_file_struct";
 
   char buf[4096] = {'\0'};
@@ -403,9 +513,7 @@ static int checkout_eop_file(iers_data_file *restrict file, long timeout_millis)
     return novas_error(-1, ERANGE, fn, "Mismatched JD in first entry: expected %.3f, got %.3f", file->jd_check, eop.jd);
 
   // Set the head
-  // TODO mutex ---
   file->head_bytes = next - buf + (long) file->start_line * file->line_len;
-  // ---
 
   return 0;
 }
@@ -418,16 +526,18 @@ static int novas_fetch_eop_from_file(iers_data_file *restrict file, double jd, n
   download_buffer data = { lines, sizeof(lines), 0 };
   int i;
 
-  // TODO mutex ---
+  lock_eop();
   if(file->head_bytes < 0) {
-    // ---
-    prop_error(fn, checkout_eop_file(file, timeout_millis), 0);
+    int stat = checkout_eop_file_async(file, timeout_millis);
+    if(stat) {
+      unlock_eop();
+      return novas_trace(fn, -1, 0);
+    }
   }
-  //else {
-    // ---
-  //}
 
   offset = file->head_bytes + file->line_len * floor((jd - file->jd_start) / file->jd_step);
+  unlock_eop();
+
   prop_error(fn, novas_fetch_eop_chunk(&file->curl, novas_get_eop_url(file->series), offset, n * file->line_len, &data, timeout_millis), 0);
 
   for(i = 0; i < n; i++) {
@@ -514,19 +624,14 @@ static int novas_eop_spline_interp(double jd, const novas_eop *restrict array, n
   return 0;
 }
 
-static void cleanup_handle_async(iers_data_file *file) {
-  CURL *curl = file->curl;
-
-  if(!curl)
-    return;
-
-  // TODO mutex ----
-  file->curl = NULL;
-  if(file->head_bytes)
-    file->head_bytes = -1;
-  // ------
-
-  curl_easy_cleanup(curl);
+static void cleanup_eop_urls_async() {
+  int i;
+  for(i = 0; i < NOVAS_NUM_EOP_SERIES; i++)
+    if(urls[i]) {
+      char *url = (char *) urls[i];
+      urls[i] = NULL;
+      free(url);
+    }
 }
 
 #endif /* !WITHOUT_CURL */
@@ -551,7 +656,7 @@ static void cleanup_handle_async(iers_data_file *file) {
  * @author Attila Kovacs
  *
  * @sa https://hpiers.obspm.fr/iers/bul/bulc/ntp/leap-seconds.list
- * @sa novas_set_eop_url(), novas_lookup_leap(), novas_fetch_eop(), novas_cleanup_eop()
+ * @sa novas_set_eop_url(), novas_lookup_leap(), novas_fetch_eop(), novas_reset_eop()
  */
 int novas_set_leap_list(const char *filename) {
   static const char *fn = "novas_set_leap_list";
@@ -578,9 +683,10 @@ int novas_set_leap_list(const char *filename) {
   if(!list)
     return novas_trace(fn, -1, 0);
 
-  // TODO mutex ---
+  novas_lock(&leap_mutex);
   set_leap_list_async(list, expiration);
-  // ---
+  novas_unlock(&leap_mutex);
+
   return 0;
 }
 
@@ -605,47 +711,49 @@ int novas_set_leap_list(const char *filename) {
  */
 int novas_lookup_leap(time_t t) {
   static const char *fn = "novas_lookup_leap";
-  // TODO local mutex
 
   const iers_leap_entry *e;
   char str[40] = {'\0'};
 
-  // TODO global mutex ---
+  lock_leap();
   if(!leaps || (t >= leap_expiration && time(NULL) >= leap_expiration)) {
 #if WITHOUT_CURL
-    // --- global
+    unlock_leap();
     return novas_error(NOVAS_INVALID_LEAP, ERANGE, fn, "no leap data available for time %lld", (long long) t);
 #else
     if(novas_is_auto_fetch_eop()) {
-      // TODO local mutex
-      // --- global
       long long expiration = 0LL;
       iers_leap_entry *update = fetch_leaps_async(&expiration);
-      if(!update)
+      if(!update) {
+        unlock_leap();
         return novas_trace(fn, 1, NOVAS_INVALID_LEAP - 1); // trick work-around propagating negative (not -1) error code.
-      // TODO global mutex ---
+      }
       set_leap_list_async(update, expiration);
-      // --- global
-      // --- local
     }
     else {
-      // --- global
+      unlock_leap();
       return novas_error(NOVAS_INVALID_LEAP, EAGAIN, fn, "automatic EOP fetching is disabled.");
     }
 #endif
   }
 
   if(t > leaps->unix_end) {
+    unlock_leap();
     strftime(str, sizeof(str), "%c", gmtime(&t));
     return novas_error(NOVAS_INVALID_LEAP, ERANGE, fn, "Time %s is beyond the leap seconds coverage range", str);
   }
 
   for(e = leaps; e != NULL; e = e->next)
-    if(t >= e->unix_start && t < e->unix_end)
+    if(t >= e->unix_start && t < e->unix_end) {
+      unlock_leap();
       return e->leap;
+    }
+
+  unlock_leap();
 
   return 0;
 }
+
 
 /**
  * Specify a URL to use for a given IERS Earth Orientation Parameter (EOP) series. By default,
@@ -685,14 +793,21 @@ int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *u
 #if WITHOUT_CURL
   return novas_error(-1, ENOSYS, fn, "SuperNOVAS was built without cURL support");
 #else
+  static int initialized;
   char *discard;
 
   if(url && !url[0])
     return novas_error(-1, EINVAL, fn, "empty URL", (int) series);
 
+  if(!initialized) {
+    atexit(cleanup_eop_urls_async);
+    initialized = 1;
+  }
+
+  if(series != EOP_LEAP_LIST)
+    lock_eop();
+
   // Close existing handles...
-  // TODO mutex ---
-  // + local mutex?
   switch(series) {
     case EOP_LEAP_LIST:
       novas_set_leap_list(NULL);
@@ -708,7 +823,7 @@ int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *u
       cleanup_handle_async(&c01_sparse);
       break;
     default:
-      // TODO release mutex
+      unlock_eop();
       return novas_error(-1, ERANGE, fn, "invalid EOP series %d", (int) series);
   }
 
@@ -719,7 +834,6 @@ int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *u
   urls[series] = url ? strdup(url) : NULL;
   if(series != EOP_LEAP_LIST)
     itrf_years[series] = url ? itrf_year : default_itrf_years[series];
-  // ----
 
   if(discard)
     free(discard);
@@ -728,17 +842,19 @@ int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *u
     case EOP_LEAP_LIST:
       if(novas_lookup_leap(0L) != 0)
         return novas_trace(fn, -1, 0);
-      break;
+      return 0;
     case EOP_RAPID_IAU2000:
-      checkout_eop_file(&rapid, 0);
+      checkout_eop_file_async(&rapid, 0);
       break;
     case EOP_C04_IAU2000_0UTC:
-      checkout_eop_file(&c04, 0);
+      checkout_eop_file_async(&c04, 0);
       break;
     case EOP_C01_IAU2000:
-      checkout_eop_file(&c01, 0);
+      checkout_eop_file_async(&c01, 0);
       break;
   }
+
+  unlock_eop();
 
   return 0;
 #endif
@@ -798,25 +914,32 @@ int novas_get_eop_itrf_year(enum novas_eop_series series) {
 /**
  * Releases resources used by URL handles used for obtaining Earth Orientation Parameter (EOP)
  * data from the International Earth Rotation and Reference Systems Service (IERS), including
- * the leap seconds list supplied earlier or obtained from IERS. This function is automatically
- * called at normal program exit, but users may call it explicitly to clean up the tiny bit of
- * resources used at any time.
+ * the leap seconds list supplied earlier or obtained from IERS. It also discards any custom
+ * URLs that may have been set previously, and restores the default IERS URLs for obtaining leap
+ * seconds and EOP from IERS. The cleanup performed by this function is automatic at normal
+ * program exit, but users may call it explicitly restore the initial state at any point.
+ *
+ * NOTES:
+ *
+ *  - This call does not affect or destroy any thread-local data currently cached. As such,
+ *    `novas_fetch_eop()` may continue to return EOP using the previously cached values, if the
+ *    requested date falls within the same data bracket as the last call.
  *
  * @since 1.7
  * @author Attila Kovacs
  *
  * @sa novas_set_leap_list(), novas_fetch_eop()
  */
-void novas_cleanup_eop() {
-  set_leap_list_async(NULL, 0LL);
+void novas_reset_eop() {
+ lock_leap();
+ set_leap_list_async(NULL, 0LL);
+ unlock_leap();
 
 #if !WITHOUT_CURL
-  // TODO mutex...
-  cleanup_handle_async(&rapid);
-  cleanup_handle_async(&c04);
-  cleanup_handle_async(&c01);
-  cleanup_handle_async(&c01_sparse);
-  // ---
+ lock_eop();
+ cleanup_eop_urls_async();
+ cleanup_eop_handles_async();
+ unlock_eop();
 #endif
 }
 
@@ -865,27 +988,20 @@ void novas_cleanup_eop() {
  * @author Attila Kovacs
  *
  * @sa https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop
- * @sa novas_fetch_current_eop(), novas_set_eop_url(), novas_cleanup_eop()
+ * @sa novas_fetch_current_eop(), novas_set_eop_url(), novas_reset_eop()
  * @sa novas_make_frame(), novas_set_time(), novas_set_auto_fetch_eop(), @ref earth
  */
 int novas_fetch_eop(double jd, long timeout_millis, novas_eop *eop) {
   static const char *fn = "novas_fetch_eop";
 
 #if WITHOUT_CURL
-  return novas_error(-1, ENOSYS, fn, "SuperNOVAS was built without curl support.");
+  return novas_error(-1, ENOSYS, fn, "SuperNOVAS was built without cURL support.");
 #else
-  static int initialized;
-
   static THREAD_LOCAL novas_eop array[4];
   static THREAD_LOCAL double jd_from, jd_to = -1.0;
 
   if(!eop)
     return novas_error(-1, EINVAL, fn, "output eop is NULL");
-
-  if(!initialized) {
-    atexit(novas_cleanup_eop);
-    initialized = 1;
-  }
 
   if(jd_to < jd_from || jd < jd_from || jd > jd_to) {
     prop_error(fn, novas_fetch_eop_array(jd, timeout_millis, array, 4), 0);

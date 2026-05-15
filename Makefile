@@ -81,6 +81,7 @@ coverage:
 .PHONY: clean
 clean:
 	@rm -f $(OBJECTS) Doxyfile.local gmon.out
+	@rm -rf infer-out
 	@$(MAKE) -s -C src clean
 	@$(MAKE) -s -C test clean
 	@$(MAKE) -s -C benchmark clean
