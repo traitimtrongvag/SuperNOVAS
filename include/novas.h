@@ -2133,11 +2133,8 @@ enum novas_reference_ellipsoid {
  * @sa novas_eop, novas_set_eop_url()
  */
 enum novas_eop_series {
-  /// EOP from undefined source
-  EOP_SERIES_UNDEFINED = -1,
-
   /// List of leap seconds, since their introduction in 1972 (`leap-seconds.list`).
-  EOP_LEAP_LIST,
+  EOP_LEAP_LIST = 0,
 
   /// IERS Rapid Service data for IAU2000, starting in 1973 (`finals.all.iau2000.txt`).
   EOP_RAPID_IAU2000,
@@ -3523,10 +3520,13 @@ int novas_set_auto_fetch_eop(int enabled);
 int novas_is_auto_fetch_eop();
 
 /// @ingroup earth
-int novas_set_eop_url(enum novas_eop_series series, const char *url);
+int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *url);
 
 /// @ingroup earth
 const char *novas_get_eop_url(enum novas_eop_series series);
+
+/// @ingroup earth
+int novas_get_eop_itrf_year(enum novas_eop_series series);
 
 /// @ingroup earth
 int novas_set_leap_list(const char *filename);

@@ -2790,7 +2790,7 @@ static int test_fetch_eop() {
 #if WITHOUT_CURL
   if(check("fetch_eop:no_curl", -1, novas_fetch_eop_unix(time(NULL), 0, NULL))) n++;
 #else
-  novas_set_eop_url(EOP_RAPID_IAU2000, "file://nosuchfile");
+  novas_set_eop_url(EOP_RAPID_IAU2000, 2020, "file://nosuchfile");
   if(check("fetch_eop:eop:rapid:url", -1, novas_fetch_eop(NOVAS_JD_J2000, 0, &eop))) n++;
 
   if(check("fetch_eop:set_split_time:old", 0, novas_set_split_time(NOVAS_TT, 0L, 0.0, 0, NAN, &ts))) n++;
@@ -2801,54 +2801,70 @@ static int test_fetch_eop() {
   url = get_resource_url("finals.all.iau2000.txt");
   if(!url) fprintf(stderr, "WARNING! missing resource 'finals.all.iau2000.txt': skipping tests requiring it.\n");
   else {
-    novas_set_eop_url(EOP_C04_IAU2000_0UTC, url);
+    novas_set_eop_url(EOP_C04_IAU2000_0UTC, 2020, url);
     if(check("fetch_eop:eop:c04:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 + 37667.0, 0, &eop))) n++;  // + 2d
   }
 
   url = get_resource_url("EOP_20u24_C04_one_file_1962-now.txt");
   if(!url) fprintf(stderr, "WARNING! missing resource 'EOP_20u24_C04_one_file_1962-now.txt': skipping tests requiring it.\n");
   else {
-    novas_set_eop_url(EOP_C01_IAU2000, url);
+    novas_set_eop_url(EOP_C01_IAU2000, 2020, url);
     if(check("fetch_eop:eop:c01:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 - 4603.268, 0, &eop))) n++; // +100d
   }
 
   url = get_resource_url("EOP_C01_IAU2000_1846-now.txt");
   if(!url) fprintf(stderr, "WARNING! missing resource 'EOP_C01_IAU2000_1846-now.txt': skipping tests requiring it.\n");
   else {
-    novas_set_eop_url(EOP_RAPID_IAU2000, url);
+    novas_set_eop_url(EOP_RAPID_IAU2000, 2020, url);
     if(check("fetch_eop:eop:rapid:format", -1, novas_fetch_eop(NOVAS_JD_MJD0 + 41686.0, 0, &eop))) n++; // +2d
   }
 
   if(check("get_eop_url:series:-1", 1, novas_get_eop_url((enum novas_eop_series) -1) == NULL)) n++;
-  if(check("set_eop_url:series:-1", -1, novas_set_eop_url((enum novas_eop_series) -1, "test"))) n++;
-  if(check("set_eop_url:empty", -1, novas_set_eop_url(EOP_RAPID_IAU2000, ""))) n++;
+  if(check("set_eop_url:series:-1", -1, novas_set_eop_url((enum novas_eop_series) -1, 2020, "test"))) n++;
+  if(check("set_eop_url:empty", -1, novas_set_eop_url(EOP_RAPID_IAU2000, 2020, ""))) n++;
 
   url = get_resource_url("C01-start.txt");
   if(!url) fprintf(stderr, "WARNING! missing resource 'C01-start.txt': skipping tests requiring it.\n");
   else {
-    if(check("set_eop_url:bad-start", 0, novas_set_eop_url(EOP_C01_IAU2000, url))) n++;
+    if(check("set_eop_url:bad-start", 0, novas_set_eop_url(EOP_C01_IAU2000, 2020, url))) n++;
     if(check("fetch_eop:bad-start", -1,  novas_fetch_eop(NOVAS_JD_MJD0 - 4650.0, 0, &eop))) n++;
   }
 
   url = get_resource_url("C01-bad.txt");
   if(!url) fprintf(stderr, "WARNING! missing resource 'C01-bad.txt': skipping tests requiring it.\n");
   else {
-    if(check("set_eop_url:bad-entry", 0, novas_set_eop_url(EOP_C01_IAU2000, url))) n++;
+    if(check("set_eop_url:bad-entry", 0, novas_set_eop_url(EOP_C01_IAU2000, 2020, url))) n++;
     if(check("fetch_eop:bad-entry", -1,  novas_fetch_eop(NOVAS_JD_MJD0 - 4650.0, 0, &eop))) n++;
   }
 
   url = get_resource_url("C01-align.txt");
   if(!url) fprintf(stderr, "WARNING! missing resource 'C01-align.txt': skipping tests requiring it.\n");
   else {
-    if(check("set_eop_url:bad-align", 0, novas_set_eop_url(EOP_C01_IAU2000, url))) n++;
+    if(check("set_eop_url:bad-align", 0, novas_set_eop_url(EOP_C01_IAU2000, 2020, url))) n++;
     if(check("fetch_eop:bad-align", -1,  novas_fetch_eop(NOVAS_JD_MJD0 - 4650.0, 0, &eop))) n++;
   }
 
   // Reset EOP URLs to their defaults
-  novas_set_eop_url(EOP_C04_IAU2000_0UTC, NULL);
-  novas_set_eop_url(EOP_C01_IAU2000, NULL);
-  novas_set_eop_url(EOP_RAPID_IAU2000, NULL);
+  novas_set_eop_url(EOP_C04_IAU2000_0UTC, 0, NULL);
+  novas_set_eop_url(EOP_C01_IAU2000, 0, NULL);
+  novas_set_eop_url(EOP_RAPID_IAU2000, 0, NULL);
+
+  if(check("fetch_eop:set_eop_url:empty", -1, novas_set_eop_url(EOP_LEAP_LIST, 0, get_resource_url("leap-seconds.empty")))) n++;
+  novas_set_leap_list(NULL);
+  if(check("fetch_eop:lookup_leap:empty_leap", NOVAS_INVALID_LEAP, novas_lookup_leap(UNIX_SECONDS_0UTC_1JAN2000))) n++;
+  if(check("fetch_eop:empty_leap", -1, novas_fetch_eop(NOVAS_JD_J2000, 0, &eop))) n++;
+  novas_set_eop_url(EOP_LEAP_LIST, 0, NULL);
+
 #endif // WITH_CURL
+
+  return n;
+}
+
+static int test_get_eop_itrf_year() {
+  int n = 0;
+
+  if(check("get_eop_itrf_year:-1", -1, novas_get_eop_itrf_year((enum novas_eop_series) -1))) n++;
+  if(check("get_eop_itrf_year:hi", -1, novas_get_eop_itrf_year((enum novas_eop_series) NOVAS_NUM_EOP_SERIES))) n++;
 
   return n;
 }
@@ -2870,6 +2886,11 @@ static int test_lookup_leap() {
   }
 
   novas_set_auto_fetch_eop(1);
+
+#if  !WITHOUT_CURL
+  if(check("lookup:set_eop_url:bad", -1, novas_set_eop_url(EOP_LEAP_LIST, 0, "file:///blah.txt"))) n++;
+  novas_set_eop_url(EOP_LEAP_LIST, 0, NULL);
+#endif
 
   return n;
 }
@@ -2899,7 +2920,6 @@ static int test_set_leap_list() {
     if(check("set_leap_list", 0, novas_set_leap_list(rc))) return n++;
     if(check("lookup_leap:offline:j2000", NOVAS_INVALID_LEAP, novas_lookup_leap(946684800L))) n++;
   }
-
 
   novas_set_leap_list(NULL);
   novas_set_auto_fetch_eop(1);
@@ -3143,6 +3163,7 @@ int main(int argc, const char *argv[]) {
 
   if(test_offset_by()) n++;
   if(test_fetch_eop()) n++;
+  if(test_get_eop_itrf_year()) n++;
   if(test_lookup_leap()) n++;
   if(test_set_leap_list()) n++;
 

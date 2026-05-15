@@ -40,6 +40,7 @@ clean-test:
 clean-cov:
 	$(MAKE) -s -C c99 clean-cov
 	$(MAKE) -s -C cpp clean-cov
+	rm -f cov.info
 
 .PHONY: clean-data
 clean-data:

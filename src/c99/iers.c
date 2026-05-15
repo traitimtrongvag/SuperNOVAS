@@ -95,6 +95,8 @@ typedef struct {
 /// The currently configured URLs for each data series
 static const char *urls[NOVAS_NUM_EOP_SERIES];
 
+static int itrf_years[NOVAS_NUM_EOP_SERIES] = { -1, 2020, 2020, 2020 };
+
 /// The default URLs for each data series.
 static const char *default_urls[NOVAS_NUM_EOP_SERIES] = {
         DEFAULT_LEAP_URL,
@@ -102,6 +104,8 @@ static const char *default_urls[NOVAS_NUM_EOP_SERIES] = {
         IERS_LATEST_URL_PREFIX "EOP_20u24_C04_one_file_1962-now.txt",
         IERS_LATEST_URL_PREFIX "EOP_C01_IAU2000_1846-now.txt"
 };
+
+static const int default_itrf_years[NOVAS_NUM_EOP_SERIES] = { -1, 2020, 2020, 2020 };
 
 /**
  * A simple data buffer for downloading data chunks from IERS
@@ -119,20 +123,20 @@ static iers_data_file rapid = { NULL, EOP_RAPID_IAU2000,
 };
 
 // 1962 -- now
-static iers_data_file medium = { NULL, EOP_C04_IAU2000_0UTC,
+static iers_data_file c04 = { NULL, EOP_C04_IAU2000_0UTC,
         -1, 219, 0, C04_JD_START, C04_JD_START, 1.0,
         16, 26, 122, 38, 134, 50, 146, 111, 206
 };
 
-// 1890 -- now (0.05 year)
-static iers_data_file old = { NULL, EOP_C01_IAU2000,
-        -1, 312, C01_SPARSE_LINES, C01_JD_START, NOVAS_JD_MJD0 + 11367.380, 0.05 * NOVAS_TROPICAL_YEAR_DAYS,
+// 1846 -- 1890 (0.1 year)
+static iers_data_file c01_sparse = { NULL, EOP_C01_IAU2000,
+        -1, 312, 0, C01_JD_START, C01_JD_START, 0.1 * NOVAS_TROPICAL_YEAR_DAYS,
         0, 12, 71, 22, 83, 32, 93, 226, 281
 };
 
-// 1846 -- 1890 (0.1 year)
-static iers_data_file very_old = { NULL, EOP_C01_IAU2000,
-        -1, 312, 0, C01_JD_START, C01_JD_START, 0.1 * NOVAS_TROPICAL_YEAR_DAYS,
+// 1890 -- now (0.05 year)
+static iers_data_file c01 = { NULL, EOP_C01_IAU2000,
+        -1, 312, C01_SPARSE_LINES, C01_JD_START, NOVAS_JD_MJD0 + 11367.380, 0.05 * NOVAS_TROPICAL_YEAR_DAYS,
         0, 12, 71, 22, 83, 32, 93, 226, 281
 };
 
@@ -357,7 +361,7 @@ static int eop_parse_line(const iers_data_file *restrict file, int line, char *s
     eop->lod *= 1e-3;       ///< finals LOD is milliseconds.
     eop->lod_err *= 1e-3;
   }
-  else if(file == &old || file == &very_old) {
+  else if(file == &c01 || file == &c01_sparse) {
     if(fabs(eop->dut1 - 99.99) < 1e-5)
       eop->dut1 = NAN;
     else
@@ -379,7 +383,7 @@ static int eop_parse_line(const iers_data_file *restrict file, int line, char *s
   return 0;
 }
 
-static int set_eop_file_struct(iers_data_file *restrict file, long timeout_millis) {
+static int checkout_eop_file(iers_data_file *restrict file, long timeout_millis) {
   static const char *fn = "set_eop_file_struct";
 
   char buf[4096] = {'\0'};
@@ -413,7 +417,7 @@ static int novas_fetch_eop_from_file(iers_data_file *restrict file, double jd, n
   int i;
 
   if(file->head_bytes < 0) {
-    prop_error(fn, set_eop_file_struct(file, timeout_millis), 0);
+    prop_error(fn, checkout_eop_file(file, timeout_millis), 0);
   }
 
   offset = file->head_bytes + file->line_len * floor((jd - file->jd_start) / file->jd_step);
@@ -447,18 +451,20 @@ static int novas_fetch_eop_array(double jd, long timeout_millis, novas_eop *rest
     // up to a year ahead...
     prop_error(fn, novas_fetch_eop_from_file(&rapid, jd - m * rapid.jd_step, eop, n, timeout_millis), 0);
   }
-  else if(jd >= medium.jd_start + m * medium.jd_step) {
-    prop_error(fn, novas_fetch_eop_from_file(&medium, jd - m * medium.jd_step, eop, n, timeout_millis), 0);
+  else if(jd >= c04.jd_start + m * c04.jd_step) {
+    prop_error(fn, novas_fetch_eop_from_file(&c04, jd - m * c04.jd_step, eop, n, timeout_millis), 0);
   }
-  else if(jd >= old.jd_start + m * old.jd_step) {
-    prop_error(fn, novas_fetch_eop_from_file(&old, jd - m * old.jd_step, eop, n, timeout_millis), 0);
-    very_old.line_len = old.line_len;
-    very_old.head_bytes = old.head_bytes - (long) old.start_line * old.line_len;
+  else if(jd >= c01.jd_start + m * c01.jd_step) {
+    int stat = novas_fetch_eop_from_file(&c01, jd - m * c01.jd_step, eop, n, timeout_millis);
+    c01_sparse.line_len = c01.line_len;
+    c01_sparse.head_bytes = c01.head_bytes - (long) c01.start_line * c01.line_len;
+    prop_error(fn, stat, 0);
   }
-  else if(jd >= very_old.jd_start + m * very_old.jd_step) {
-    prop_error(fn, novas_fetch_eop_from_file(&very_old, jd - m * very_old.jd_step, eop, n, timeout_millis), 0);
-    old.line_len = very_old.line_len;
-    old.head_bytes = very_old.head_bytes + (long) old.start_line * very_old.line_len;
+  else if(jd >= c01_sparse.jd_start + m * c01_sparse.jd_step) {
+    int stat = novas_fetch_eop_from_file(&c01_sparse, jd - m * c01_sparse.jd_step, eop, n, timeout_millis);
+    c01.line_len = c01_sparse.line_len;
+    c01.head_bytes = c01_sparse.head_bytes + (long) c01.start_line * c01_sparse.line_len;
+    prop_error(fn, stat, 0);
   }
   else {
     memset(eop, 0, sizeof(novas_eop));
@@ -602,7 +608,7 @@ int novas_lookup_leap(time_t t) {
       long long expiration = 0LL;
       iers_leap_entry *update = fetch_leaps_async(&expiration);
       if(!update)
-        return novas_trace(fn, -1, 0);
+        return novas_trace(fn, 1, NOVAS_INVALID_LEAP - 1); // trick work-around propagating negative (not -1) error code.
       set_leap_list(update, expiration);
     }
     else return novas_error(NOVAS_INVALID_LEAP, EAGAIN, fn, "automatic EOP fetching is disabled.");
@@ -627,12 +633,21 @@ int novas_lookup_leap(time_t t) {
  * want to use a local file, or a local mirror instead for faster, more reliable source(s) for
  * the IERS data. This function allows you to do just that.
  *
+ * This call will check out the specified URL, to ensure it points to a suitable file for the
+ * series, and will return an error if the file is not appropriate. As such, the call may be
+ * delayed for a long time, while cURL fetches a few kilobytes from the file, needed for
+ * validation.
+ *
  * NOTES:
  *
  *  - Requires __SuperNOVAS__ to be compiled with cURL support enabled, otherwise -1 is returned
  *    with `errno` set to `ENOSYS`.
  *
  * @param series      The EOP series identifier constant.
+ * @param itrf_year   [yr] ITRF realization year. Needed only for precision at the few &mu;as
+ *                    level, otherwise, you can set it to something recent, like 2020. It is
+ *                    unused if the URL is NULL, or if the series if the leap seconds list. For
+ *                    years prior to the first ITRF realization (in 1988), 1988 will be used.
  * @param url         The new URL to use for the given data series, or NULL to use the default
  *                    IERS data center URL.
  * @return            0 if successful, or else -1 if there was an error (`errno` will be set to
@@ -642,9 +657,9 @@ int novas_lookup_leap(time_t t) {
  * @since 1.7
  * @author Attila Kovacs
  *
- * @sa novas_get_eop_url(), novas_fetch_eop(), novas_set_leap_list()
+ * @sa novas_get_eop_url(), novas_fetch_eop(), novas_set_leap_list(), novas_get_eop_itrf_year()
  */
-int novas_set_eop_url(enum novas_eop_series series, const char *url) {
+int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *url) {
   static const char *fn = "novas_set_eop_url";
 
 #if WITHOUT_CURL
@@ -656,29 +671,56 @@ int novas_set_eop_url(enum novas_eop_series series, const char *url) {
     return novas_error(-1, EINVAL, fn, "empty URL", (int) series);
 
   // Close existing handles...
-  // TODO mutex....
+  // TODO mutex ---
   switch(series) {
+    case EOP_LEAP_LIST:
+      novas_set_leap_list(NULL);
+      break;
     case EOP_RAPID_IAU2000:
       cleanup_handle_async(&rapid);
       break;
     case EOP_C04_IAU2000_0UTC:
-      cleanup_handle_async(&medium);
+      cleanup_handle_async(&c04);
       break;
     case EOP_C01_IAU2000:
-      cleanup_handle_async(&old);
-      cleanup_handle_async(&very_old);
+      cleanup_handle_async(&c01);
+      cleanup_handle_async(&c01_sparse);
       break;
     default:
       // TODO release mutex
       return novas_error(-1, ERANGE, fn, "invalid EOP series %d", (int) series);
   }
 
+  if(itrf_year < 1988)
+    itrf_year = 1988;
+
   discard = (char *) urls[series];
   urls[series] = url ? strdup(url) : NULL;
+  if(series != EOP_LEAP_LIST)
+    itrf_years[series] = url ? itrf_year : default_itrf_years[series];
   // ----
 
   if(discard)
     free(discard);
+
+  switch(series) {
+    case EOP_LEAP_LIST:
+      if(novas_lookup_leap(0L) != 0)
+        return novas_trace(fn, -1, 0);
+      break;
+    case EOP_RAPID_IAU2000:
+      checkout_eop_file(&rapid, 0);
+      break;
+    case EOP_C04_IAU2000_0UTC:
+      checkout_eop_file(&c04, 0);
+      break;
+    case EOP_C01_IAU2000:
+      checkout_eop_file(&c01, 0);
+      break;
+    default:
+      // TODO release mutex
+      return novas_error(-1, ERANGE, fn, "invalid EOP series %d", (int) series);
+  }
 
   return 0;
 #endif
@@ -695,7 +737,7 @@ int novas_set_eop_url(enum novas_eop_series series, const char *url) {
  * @since 1.7
  * @author Attila Kovacs
  *
- * @sa novas_set_eop_url(), novas_fetch_eop()
+ * @sa novas_set_eop_url(), novas_fetch_eop(), novas_get_eop_itrf_year()
  */
 const char *novas_get_eop_url(enum novas_eop_series series) {
 #if WITHOUT_CURL
@@ -715,6 +757,28 @@ const char *novas_get_eop_url(enum novas_eop_series series) {
 }
 
 /**
+ * Returns the ITRF realization year for a given IERS Earth Orientation Parameter (EOP) series.
+ *
+ * @param series    The EOP series identifier constant.
+ * @return          [yr] ITRF realization year, e.g. as set by `novas_set_eop_url()`.
+ *
+ * @since 1.7
+ * @author Attila Kovacs
+ *
+ * @sa novas_set_eop_url(), novas_fetch_eop()
+ */
+int novas_get_eop_itrf_year(enum novas_eop_series series) {
+#if WITHOUT_CURL
+  return novas_error(-1, EINVAL, "novas_get_eop_itrf_year", "SuperNOVAS was compiled without cURL support");
+#else
+  if((unsigned int) series >= NOVAS_NUM_EOP_SERIES)
+    return novas_error(-1, EINVAL, "novas_get_eop_itrf_year", "invalid series: %d", (int) series);
+  return itrf_years[series];
+#endif
+}
+
+
+/**
  * Releases resources used by URL handles used for obtaining Earth Orientation Parameter (EOP)
  * data from the International Earth Rotation and Reference Systems Service (IERS), including
  * the leap seconds list supplied earlier or obtained from IERS. This function is automatically
@@ -732,9 +796,9 @@ void novas_cleanup_eop() {
 #if !WITHOUT_CURL
   // TODO mutex...
   cleanup_handle_async(&rapid);
-  cleanup_handle_async(&medium);
-  cleanup_handle_async(&old);
-  cleanup_handle_async(&very_old);
+  cleanup_handle_async(&c04);
+  cleanup_handle_async(&c01);
+  cleanup_handle_async(&c01_sparse);
   // ---
 #endif
 }

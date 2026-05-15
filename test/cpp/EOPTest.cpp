@@ -78,10 +78,9 @@ int main() {
   if(!test.equals("fetch_for_jd(old)", d.leap_seconds(), 0)) n++;
 
   novas_set_auto_fetch_eop(0);
-  novas_set_eop_url(EOP_RAPID_IAU2000, "file://blah.txt");
+  novas_set_eop_url(EOP_RAPID_IAU2000, 2020, "file://blah.txt");
   if(!test.check("fetch_current(bad-URL)", !EOP::fetch_current(Interval(1.0)).is_valid())) n++;
-
-  novas_set_eop_url(EOP_RAPID_IAU2000, NULL);
+  novas_set_eop_url(EOP_RAPID_IAU2000, 0, NULL);
 
 #endif // WITH_CURL && !OFFLINE
 
