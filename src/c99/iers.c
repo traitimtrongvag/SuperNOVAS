@@ -5,7 +5,15 @@
  * @author Attila Kovacs
  *
  *  Functions to obtain and manage Earth Orientation data from the International Earth Rotation
- *  and Reference Systems Service (IERS) via HTTPS.
+ *  and Reference Systems Service (IERS) via HTTPS, or using other (remote or local) URLs.
+ *
+ *  The functions in this module are generally thread-safe. That is, you may call all functions
+ *  from concurrent threads without data corruption. However, note that the EOP resources (URLs
+ *  and/or local files), and the setting that enables/disables automatic fetching, are global
+ *  settings. Thus, changing these in one thread will effect subsequent EOP fetch calls in other
+ *  threads also.
+ *
+ *  @sa \ref earth
  */
 
 #if !defined(_MSC_VER)
@@ -662,7 +670,8 @@ int novas_set_leap_list(const char *filename) {
  * @since 1.7
  * @author Attila Kovacs
  *
- * @sa novas_set_leap_list(), novas_fetch_eop(), novas_is_auto_fetch_eop(), NOVAS_INVALID_LEAP
+ * @sa novas_set_leap_list(), novas_set_eop_url(), novas_fetch_eop(), novas_is_auto_fetch_eop(),
+ *     NOVAS_INVALID_LEAP
  */
 int novas_lookup_leap(time_t t) {
   static const char *fn = "novas_lookup_leap";
@@ -812,7 +821,7 @@ int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *u
   unlock_eop();
 
   return 0;
-#endif
+#endif // WITH_CURL
 }
 
 /**
@@ -821,7 +830,7 @@ int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *u
  * @param series    The EOP series identifier constant.
  * @return          The currently configured URL for the given series, or else NULL if the series
  *                  is invalid (`errno` set to `ERANGE`), or if __SuperNOVAS__ was built without
- *                  cURL support (`errno` set to ENOSYS`).
+ *                  cURL support (`errno` set to `ENOSYS`).
  *
  * @since 1.7
  * @author Attila Kovacs
@@ -910,33 +919,33 @@ void novas_reset_eop() {
  *
  * NOTES:
  *
- *  1. You must have access to the `curl` library and built __SuperNOVAS__ with cURL support.
- *     Otherwise this function will return -1, with `errno` set to `ENOSYS`.
+ *  1. You must have built __SuperNOVAS__ with cURL support. Otherwise, this function will return
+ *     -1, with `errno` set to `ENOSYS`.
  *
- *  2. You will need an internet connection and the IERS server must be online and accessible (at
- *     least for the initial call).
+ *  2. You will need an internet connection and the IERS server must be online and accessible,
+ *     unless you have changed the necessary URLs to use local copies instead (see
+ *     `novas_set_eop_url()`).
  *
- *  3. Obtaining values from IERS can have arbitrary latencies, and can impact performance
+ *  3. Obtaining values from IERS can have arbitrary latencies, and can impact the performance
  *     severely. For performance critical applications, you should consider specifying the EOP
- *     values more directly, e.g. from a local file instead.
+ *     values more directly, or using local files instead (see also `novas_set_eop_url()`).
  *
  *  4. This function assumes that the files served from IERS remain accessible and their format
- *     does not change over time.
+ *     does not change over time. As such what works today, may not work the same in the future.
  *
- *  5. This function caches EOP data from the last online query. As such repeated calls within the
- *     same data bracket (typically the same MJD day) will return fast and will reuse the last
- *     data obtained from the IERS.
+ *  5. This function caches EOP data from the last query. As such repeated calls within the same
+ *     date bracket (typically the same MJD day) will return fast and will interpolate from the
+ *     data last obtained from the IERS.
  *
- *  6. This function uses cubic spline interpolation of the published data points.
+ *  6. This function uses cubic spline interpolation around the published data points. As such,
+ *     it needs at least two data points at the same time or before, and two points after, the
+ *     date for which interpolated values are requested.
  *
- *  7. The returned EOP values are assumed to be ITRF 2020 values, which is appropriate
- *     at the time this __SuperNOVAS__ module was written or last updated. If IERS later publishes
- *     data in some other future ITRF realization, this module may need to be updated, accordingly.
- *     However, the ITRF realization is unlikely to matter significantly.
- *
- *  8. Prior to 1 Jan 1956, the UT1-UTC time difference is not provided by IERS, as it was not
- *     measured prior to the age of atomic clocks. Hence for dates prior to 1956 the returned
- *     EOP will have `dut1`(and its uncertainty) set to NAN.
+ *  7. Prior to 1 Jan 1956, the UT1-UTC time difference, and length-of-day (LOD) are not provided
+ *     by IERS, as they were not measured prior to the age of atomic clocks. Hence, for dates
+ *     prior to 1956 the returned EOP will have `dut1` and `lod` (and their uncertainties) set to
+ *     NAN. (However, the polar the offsets _x_<sub>p</sub> and _y_<sub>p</sub> can be provided
+ *     all the way back to 1846, with some precision.)
  *
  * @param jd              Julian Date (in any timescale, with a preference for UTC)
  * @param timeout_millis  [ms] HTTP connection timeout, or &lt;=0 to leave unchanged.

@@ -457,7 +457,7 @@ double get_ut1_to_tt(int leap_seconds, double dut1) {
  * @sa novas_set_split_time(), novas_set_unix_time(), novas_set_str_time(),
  *     novas_set_current_time(), novas_get_time(), novas_timescale_for_string(),
  *     novas_diurnal_eop()
- * @sa novas_set_auto_fetch_eop()
+ * @sa novas_set_auto_fetch_eop(), novas_lookup_leap(), novas_fetch_eop()
  */
 int novas_set_time(enum novas_timescale timescale, double jd, int leap, double dut1, novas_timespec *restrict time) {
   prop_error("novas_set_time", novas_set_split_time(timescale, 0, jd, leap, dut1, time), 0);
@@ -492,7 +492,8 @@ int novas_set_time(enum novas_timescale timescale, double jd, int leap, double d
  * @since 1.5
  * @author Attila Kovacs
  *
- * @sa novas_set_time(), novas_parse_date(), novas_set_auto_fetch_eop()
+ * @sa novas_set_time(), novas_parse_date()
+ * @sa novas_set_auto_fetch_eop(), novas_lookup_leap(), novas_fetch_eop()
  */
 int novas_set_str_time(enum novas_timescale timescale, const char *restrict str, int leap, double dut1, novas_timespec *restrict time) {
   double jd = novas_parse_date(str, NULL);
@@ -576,7 +577,8 @@ static double tt_offset(const novas_timespec *ts, enum novas_timescale timescale
  * @author Attila Kovacs
  *
  * @sa novas_set_time(), novas_set_unix_time(), novas_get_split_time(), novas_timescale_for_string(),
- *     novas_diurnal_eop(), novas_set_auto_fetch_eop()
+ *     novas_diurnal_eop()
+ * @sa novas_set_auto_fetch_eop(), novas_lookup_leap(), novas_fetch_eop()
  */
 int novas_set_split_time(enum novas_timescale timescale, long ijd, double fjd, int leap, double dut1,
         novas_timespec *restrict time) {
@@ -925,7 +927,7 @@ double novas_diff_tcg(const novas_timespec *t1, const novas_timespec *t2) {
  * @author Attila Kovacs
  *
  * @sa novas_set_current_time(), novas_set_time(), novas_get_unix_time(), novas_diurnal_eop()
- * @sa novas_set_auto_fetch_eop()
+ * @sa novas_set_auto_fetch_eop(), novas_lookup_leap(), novas_fetch_eop()
  */
 int novas_set_unix_time(time_t unix_time, long nanos, int leap, double dut1, novas_timespec *restrict time) {
   long jd, sojd;
@@ -972,7 +974,8 @@ int novas_set_unix_time(time_t unix_time, long nanos, int leap, double dut1, nov
  * @since 1.5
  * @author Attila Kovacs
  *
- * @see novas_set_unix_time(), novas_set_auto_fetch_eop()
+ * @sa novas_set_unix_time()
+ * @sa novas_set_auto_fetch_eop(), novas_lookup_leap(), novas_fetch_eop()
  */
 int novas_set_current_time(int leap, double dut1, novas_timespec *restrict time) {
   struct timespec t = {};

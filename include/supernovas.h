@@ -1898,6 +1898,8 @@ public:
 
   static Time from_mjd(double mjd, const EOP& eop = EOP::undefined(), enum novas_timescale timescale = NOVAS_TT);
 
+  static Time now(int leap_seconds, double dUT1);
+
   static Time now(const EOP& eop = EOP::undefined());
 
   static const Time& j2000();

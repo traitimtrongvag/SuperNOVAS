@@ -46,13 +46,13 @@ static bool is_valid_parms(double dUT1,  enum novas_timescale timescale) {
  * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0). It may be unused if
  *                      `dUT1` is NAN -- see below.
  * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service, or
- *                      NAN to fetch leap and dUT1 from IERS, if possible and allowed for dates
- *                      after 1 Jan 1956.
+ *                      NAN to fetch leap and dUT1 from IERS for dates after 1 Jan 1956, if
+ *                      possible and allowed.
  * @param timescale     (optional) Astronomical timescale (default: TT).
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
- * @sa novas_set_auto_fetch_eop()
+ * @sa novas_set_auto_fetch_eop(), novas_lookup_leap(), novas_fetch_eop()
  */
 Time::Time(double jd, int leap_seconds, double dUT1, enum novas_timescale timescale) {
   novas_set_time(timescale, jd, leap_seconds, dUT1, &_ts);
@@ -87,13 +87,13 @@ Time::Time(double jd, const EOP& eop, enum novas_timescale timescale)
  * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0). It may be unused if
  *                      `dUT1` is NAN -- see below.
  * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service, or
- *                      NAN to fetch leap and dUT1 from IERS, if possible and allowed for dates
- *                      after 1 Jan 1956.
+ *                      NAN to fetch leap and dUT1 from IERS for dates after 1 Jan 1956, if
+ *                      possible and allowed.
  * @param timescale     (optional) Astronomical timescale (default: TT).
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
- * @sa novas_set_auto_fetch_eop()
+ * @sa novas_set_auto_fetch_eop(), novas_lookup_leap(), novas_fetch_eop()
  */
 Time::Time(long ijd, double fjd, int leap_seconds, double dUT1, enum novas_timescale timescale) {
   novas_set_split_time(timescale, ijd, fjd, leap_seconds, dUT1, &_ts);
@@ -116,6 +116,7 @@ Time::Time(long ijd, double fjd, int leap_seconds, double dUT1, enum novas_times
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
+ * @sa novas_set_auto_fetch_eop()
  */
 Time::Time(long ijd, double fjd, const EOP& eop, enum novas_timescale timescale)
 : Time(ijd, fjd, eop.leap_seconds(), eop.dUT1().seconds(), timescale) {}
@@ -127,15 +128,15 @@ Time::Time(long ijd, double fjd, const EOP& eop, enum novas_timescale timescale)
  * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0). It may be unused if
  *                      `dUT1` is NAN -- see below.
  * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service, or
- *                      NAN to fetch leap and dUT1 from IERS, if possible and allowed for dates
- *                      after 1 Jan 1956.
+ *                      NAN to fetch leap and dUT1 from IERS for dates after 1 Jan 1956, if
+ *                      possible and allowed.
  * @param timescale     (optional) Astronomical timescale (default: TT).
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
  * @sa novas_parse_date(), novas_parse_ido_date(), novas_parse_date_format(),
  *     novas_parse_timescale() for more managed parsing from strings.
- * @sa novas_set_auto_fetch_eop()
+ * @sa novas_set_auto_fetch_eop(), novas_lookup_leap(), novas_fetch_eop()
  */
 Time::Time(const std::string& timestamp, int leap_seconds, double dUT1, enum novas_timescale timescale) {
   if(novas_set_str_time(timescale, timestamp.c_str(), leap_seconds, dUT1, &_ts) != 0)
@@ -169,12 +170,12 @@ Time::Time(const std::string& timestamp, const EOP& eop, enum novas_timescale ti
  * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0). It may be unused if
  *                      `dUT1` is NAN -- see below.
  * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service, or
- *                      NAN to fetch leap and dUT1 from IERS, if possible and allowed for dates
- *                      after 1 Jan 1956.
+ *                      NAN to fetch leap and dUT1 from IERS for dates after 1 Jan 1956, if
+ *                      possible and allowed.
  *
  * @since 1.6
  * @sa now(), from_mjd(), j2000(), b1950(), b1900(), hip()
- * @sa novas_set_auto_fetch_eop()
+ * @sa novas_set_auto_fetch_eop(), novas_lookup_leap(), novas_fetch_eop()
  */
 Time::Time(const struct timespec *t, int leap_seconds, double dUT1) {
   if(!t)
@@ -863,6 +864,33 @@ Time Time::from_mjd(double mjd, const EOP& eop, enum novas_timescale timescale) 
  * sure that your computer is well synchronized to a trustworthy time server, preferably on a local
  * network, such as an ntp server with a GPS receiver.
  *
+ * @param leap_seconds  [s] leap seconds, that is TAI - UTC (default: 0). It may be unused if
+ *                      `dUT1` is NAN -- see below.
+ * @param dUT1          [s] UT1 - UTC time difference, e.g. from the IERS Bulletins or service, or
+ *                      NAN to fetch leap and dUT1 from IERS for dates after 1 Jan 1956, if
+ *                      possible and allowed.
+ * @return              a new astrometric time corresponding to the current system time.
+ *
+ * @since 1.7
+ * @sa Time(), from_mjd(), j2000(), b1950(), b1900(), hip()
+ * @sa novas_set_auto_fetch_eop(), novas_lookup_leap(), novas_fetch_eop()
+ */
+Time Time::now(int leap_seconds, double dUT1) {
+  novas_timespec ts = {};
+  novas_set_current_time(leap_seconds, dUT1, &ts);
+
+  Time time = Time(&ts);
+  if(!time.is_valid())
+    novas_trace_invalid("Time::now()");
+  return time;
+}
+
+/**
+ * Resturns a new astrometric time instance for the current time. It is only as accurate as the
+ * system clock, and its precision may be limited by the resolution of the system clock also. Be
+ * sure that your computer is well synchronized to a trustworthy time server, preferably on a local
+ * network, such as an ntp server with a GPS receiver.
+ *
  * @param eop           (optional) Earth Orientation Parameters (EOP) values, e.g. obtained from
  *                      IERS, or EOP::undefined() to fetch it from IERS, if possible and
  *                      allowed (default: undefined).
@@ -873,13 +901,7 @@ Time Time::from_mjd(double mjd, const EOP& eop, enum novas_timescale timescale) 
  * @sa novas_set_auto_fetch_eop()
  */
 Time Time::now(const EOP& eop) {
-  novas_timespec ts = {};
-  novas_set_current_time(eop.leap_seconds(), eop.dUT1().seconds(), &ts);
-
-  Time time = Time(&ts);
-  if(!time.is_valid())
-    novas_trace_invalid("Time::now()");
-  return time;
+  return now(eop.leap_seconds(), eop.dUT1().seconds());
 }
 
 /**

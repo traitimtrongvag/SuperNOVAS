@@ -675,8 +675,8 @@ Time CalendarDate::to_time(int leap_seconds, double dut1, novas_timescale timesc
  * to the same level of precision also.
  *
  * @param eop             (optional) Earth Orientation Parameters (EOP) for this date, or
- *                        EOP::undefined() to fetch from IERS if possible and allowed for dates
- *                        after 1 Jan 1956.
+ *                        EOP::undefined() to fetch from IERS for dates after 1 Jan 1956, if
+ *                        possible and allowed.
  * @param timescale       (optional) the astronomical timescale in which this calendar date is
  *                        defined (default: UTC).
  * @return                an astronomical time instance for this date and input parameters.
