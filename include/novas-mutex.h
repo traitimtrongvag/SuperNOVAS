@@ -13,6 +13,7 @@
 /// \cond PROTECTED
 #if defined(SUPERNOVAS_USE_PTHREAD) || defined(__unix__) || defined(__unix) || defined(__APPLE__)
 #  include <pthread.h>
+#  include <stdlib.h>           // for NULL
 
 #  define novas_init_lock(x)    pthread_mutex_init(x, NULL)
 #  define novas_lock            pthread_mutex_lock
