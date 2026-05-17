@@ -177,7 +177,7 @@ public:
   static constexpr double uas = 1e-6 * arcsec;            ///< [rad] 1 microsecond of arc in radians
 
   // Pressure units
-  static constexpr double Pa = 1.0;                       ///< [Pa] 1 pascal (standard unit of perssure)
+  static constexpr double Pa = 1.0;                       ///< [Pa] 1 pascal (standard unit of pressure)
   static constexpr double hPa = 100.0;                    ///< [Pa] 1 hectopascal in pascals
   static constexpr double mbar = hPa;                     ///< [Pa] 1 millibar in pascals
   static constexpr double bar = 1000.0 * mbar;            ///< [Pa] 1 bar in pascals
@@ -225,7 +225,7 @@ public:
   static constexpr double half_pi = 0.5 * pi;           ///< [rad] &pi;/2
 
   static constexpr double c = NOVAS_C;                  ///< [m/s] speed of light
-  static constexpr double G = 6.67428e-1;               ///< [m<sup>3</sup> kg<sup>-1</sup> s<sup>-2</sup>]
+  static constexpr double G = 6.67428e-11;              ///< [m<sup>3</sup> kg<sup>-1</sup> s<sup>-2</sup>]
 
   static constexpr double L_B = 1.550519768e-8;         ///< Barycentric clock rate increment over TT
   static constexpr double L_G = 6.969290134e-10;        ///< Geocentric clock rate increment over TT
@@ -235,7 +235,7 @@ public:
   static constexpr double GM_sun = NOVAS_G_SUN;	        ///< [m<sup>3</sup> s<sup>-2</sup>] Solar graviational constant
   static constexpr double GM_earth = NOVAS_G_EARTH;     ///< [m<sup>3</sup> s<sup>-2</sup>] Earth graviational constant
   static constexpr double M_sun = GM_sun / G;           ///< [kg] Mass of the Sun
-  static constexpr double M_earth = GM_sun / G;         ///< [kg] Earth mass
+  static constexpr double M_earth = GM_earth / G;         ///< [kg] Earth mass
 
   static constexpr double R_earth = NOVAS_GRS80_RADIUS; ///< [m] 1 Earth quatorial radius (GRS80) in meters
 };
@@ -263,7 +263,7 @@ protected:
 public:
 
   /**
-   * Returns the previously set 'valid' stae of the implementing instance. Generally 'valid' means
+   * Returns the previously set 'valid' state of the implementing instance. Generally 'valid' means
    * that the class has all fields defined with sane values, such as floating-point values that
    * are not NAN, and object fields that are themselves 'valid'. Some implementing classes may
    * also apply additional range checking for values, for example, ensuring that a velocity does
@@ -564,7 +564,7 @@ public:
  */
 class Angle : public Scalar {
 private:
-  /// Instantiates an indefined angle
+  /// Instantiates an undefined angle
   Angle() : Scalar() {}
 
 public:
