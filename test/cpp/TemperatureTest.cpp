@@ -20,12 +20,12 @@ int main() {
   if(!test.check("is_valid(NAN)", !x.is_valid())) n++;
   if(!test.check("isnan(NAN)", isnan(x.celsius()))) n++;
   if(!test.check("!is_valid(-1 K)", !Temperature::kelvin(-1.0).is_valid())) n++;
-  if(!test.check("is_valid(-1000 F)", !Temperature::fahrenheit(-1000.0).is_valid())) n++;
+  if(!test.check("!is_valid(-460 F)", !Temperature::fahrenheit(-460.0).is_valid())) n++;
 
   Temperature a = Temperature::celsius(45.0);
   if(!test.check("is_valid(45 C)", a.is_valid())) n++;
   if(!test.equals("celsius()", a.celsius(), 45.0)) n++;
-  if(!test.equals("farenheit()", a.fahrenheit(), 45.0 * 1.8 + 32.0, 1e-15)) n++;
+  if(!test.equals("fahrenheit()", a.fahrenheit(), 45.0 * 1.8 + 32.0, 1e-15)) n++;
   if(!test.equals("kelvin()", a.kelvin(), 45.0 + 273.15, 1e-12)) n++;
   if(!test.equals("SI_unit()", a.SI_unit(), "K")) n++;
   if(!test.equals("SI_value()", a.SI_value(), a.kelvin(), 0.0)) n++;
