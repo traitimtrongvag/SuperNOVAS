@@ -1378,9 +1378,9 @@ public:
 };
 
 /**
- * An Earth-based (geodetic) observer site location, or airborne observer location. Positions may
- * be defined as GPS / WGS84 or else as ITRF / GRS80 geodetic locations, or as Cartesian geocentric
- * _xyz_ positions in the International Terrestrial Reference Frame (ITRF).
+ * An Earth-based (geodetic) observer site location, or a momentary airborne observer location.
+ * Positions may be defined as GPS / WGS84 or else as ITRF / GRS80 geodetic locations, or as
+ * Cartesian geocentric _xyz_ positions in the International Terrestrial Reference Frame (ITRF).
  *
  * The class provides the means to convert between ITRF realizations, e.g. to match the ITRF
  * realization used for the Eath Orientation Parameters (%EOP) obtained from IERS, for &mu;as

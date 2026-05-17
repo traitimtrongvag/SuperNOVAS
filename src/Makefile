@@ -1,6 +1,6 @@
-# Additional Makefile for building the C/C++ libratries of SuperNOVAS.
+# Additional Makefile for building the C/C++ libraries of SuperNOVAS.
 #
-# To invoke simply sun make in the SuperNOVAS root directory
+# To invoke simply run make in the SuperNOVAS root directory
 #
 # Author: Attila Kovacs
 

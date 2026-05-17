@@ -36,11 +36,11 @@ include(FeatureSummary)
 
 # Build options
 option(BUILD_SHARED_LIBS "Build as shared libraries instead of static" OFF)
-option(BUILD_DOC "Build HTML documetation" OFF)
+option(BUILD_DOC "Build HTML documentation" OFF)
 option(BUILD_TESTING "Build regression test suite" ON)
 option(BUILD_EXAMPLES "Build example programs" OFF)
 option(BUILD_BENCHMARK "Build benchmark programs" OFF)
-option(WITHOUT_CURL "Build withour cURL support (no fetching EOP from IERS possible)" ON)
+option(WITHOUT_CURL "Build without cURL support (no fetching EOP from IERS possible)" ON)
 option(ENABLE_CPP "Enable C++ library build (supernovas++ library)" OFF)
 option(ENABLE_CALCEPH "Enable CALCEPH support (solsys-calceph plugin)" OFF)
 option(ENABLE_CSPICE "Enable CSPICE support (solsys-cspice plugin)" OFF)

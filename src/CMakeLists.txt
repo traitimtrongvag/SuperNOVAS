@@ -1,4 +1,4 @@
-# Additional CMake configuration file for building the C/C++ libratries of 
+# Additional CMake configuration file for building the C/C++ libraries of 
 # SuperNOVAS.
 #
 # To invoke simply configure and run the cmake build in the supernovas root 
