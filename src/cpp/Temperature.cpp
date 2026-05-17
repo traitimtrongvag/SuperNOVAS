@@ -60,14 +60,14 @@ double Temperature::kelvin() const {
 }
 
 /**
- * Returns the temperature value in degrees Farenheit.
+ * Returns the temperature value in degrees Fahrenheit.
  *
  * @return    [F] The temperature value
  *
  * @since 1.6
  * @sa celsius(), kelvin()
  */
-double Temperature::farenheit() const {
+double Temperature::fahrenheit() const {
   return 32.0 + 1.8 * celsius();
 }
 
@@ -125,7 +125,7 @@ Temperature Temperature::kelvin(double value) {
 
 /**
  * Returns a new temperature object, with the specified temperature value defined in degrees
- * Farenheit.
+ * Fahrenheit.
  *
  * @param value   [F] temperature value
  * @return        A new temperature object with the specified value.
@@ -133,7 +133,7 @@ Temperature Temperature::kelvin(double value) {
  * @since 1.6
  * @sa celisus(), kelvin()
  */
-Temperature Temperature::farenheit(double value) {
+Temperature Temperature::fahrenheit(double value) {
   Temperature T((value - 32.0) / 1.8);
   if(!T.is_valid())
     novas_trace_invalid("Temperature::farenheit(double)");

@@ -11,6 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Release candidate for the upcoming feature release, possibly around 1 August 2026.
 
+### Fixed
+
+ - #321: `Constant::G` had missing digit in exponent, causing also `Constant::M_sun` and `Contant::M_earth` to be 
+   wrong (thanks to CodeQL).
+   
+ - #322: Fixed spelling of `Temperature::fahrenheit()` (thanks to CodeQL). (The misspelled `farenheit()` remains
+   supported also for backward compatibility). 
+
 ### Added
 
  - #313: Support for fetching of leap-seconds and EOP data from IERS, also automatically as needed when the EOP 

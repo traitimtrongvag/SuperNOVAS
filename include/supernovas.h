@@ -193,7 +193,7 @@ public:
 /**
  * Various physical constants that SuperNOVAS uses for astrometric calculations, all expressed in
  * terms of SI units. You can use them also. For example, you might use Constant::c to turn a
- * velocity (im m/s) to a unitless &beta;:
+ * velocity (in m/s) to a unitless &beta;:
  *
  * ```c
  *   double beta = (29.5 * Unit::km / Unit::sec) / Constant::c;
@@ -1201,7 +1201,7 @@ public:
 
   double kelvin() const;
 
-  double farenheit() const;
+  double fahrenheit() const;
 
   std::string SI_unit() const override;
 
@@ -1211,7 +1211,19 @@ public:
 
   static Temperature kelvin(double value);
 
-  static Temperature farenheit(double value);
+  static Temperature fahrenheit(double value);
+
+  /// \cond PRIVATE
+  // These are the original misspelled forms, which we'll support still, but won't advertise
+  // in the documentation.
+  [[deprecated("Use fahrenheit() instead.")]] double farenheit() const {
+    return fahrenheit();
+  }
+
+  [[deprecated("Use fahrenheit(double) instead.")]] static Temperature farenheit(double value) {
+    return fahrenheit(value);
+  }
+  /// \endcond
 };
 
 /**
@@ -1264,7 +1276,7 @@ public:
 };
 
 /**
- * %Weather data, mainly for atmopsheric refraction correction for Earth-based (geodetic)
+ * %Weather data, mainly for atmospheric refraction correction for Earth-based (geodetic)
  * observers.
  *
  * @since 1.6
@@ -1332,7 +1344,7 @@ public:
 class EOP : public Validating {
 private:
   int _leap;          ///< [s] store leap seconds (UTC - TAI time difference).
-  Angle _xp;          ///< stored x pole offset (at midhight UTC).
+  Angle _xp;          ///< stored x pole offset (at midnight UTC).
   Angle _yp;          ///< stored y pole offset (at midnight UTC).
   double _dut1;       ///< [s] stored UT1 - UTC time difference.
 
