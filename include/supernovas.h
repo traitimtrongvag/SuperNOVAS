@@ -225,7 +225,7 @@ public:
   static constexpr double half_pi = 0.5 * pi;           ///< [rad] &pi;/2
 
   static constexpr double c = NOVAS_C;                  ///< [m/s] speed of light
-  static constexpr double G = 6.67428e-11;              ///< [m<sup>3</sup> kg<sup>-1</sup> s<sup>-2</sup>]
+  static constexpr double G = 6.67428e-11;              ///< [m<sup>3</sup> kg<sup>-1</sup> s<sup>-2</sup>] Gravitational constant
 
   static constexpr double L_B = 1.550519768e-8;         ///< Barycentric clock rate increment over TT
   static constexpr double L_G = 6.969290134e-10;        ///< Geocentric clock rate increment over TT
@@ -2923,7 +2923,7 @@ public:
  */
 class HorizontalTrack : public Track<Horizontal> {
 private:
-  /// Imnstantiates an undefined horizontal track.
+  /// Instantiates an undefined horizontal track.
   HorizontalTrack() : Track() {}
 
   HorizontalTrack(const novas_track *track, const Interval& range);

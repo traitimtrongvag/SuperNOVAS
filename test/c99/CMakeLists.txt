@@ -59,16 +59,16 @@ foreach(TEST ${TEST_PROGRAMS})
         if(${TEST} STREQUAL "test-calceph")
             find_library(CALCEPH_LIB calceph REQUIRED)
             target_link_libraries(${TEST} PRIVATE solsys-calceph)
-     	    add_test(NAME ${TEST} COMMAND ${TEST} ${EPHEM_DIR})
-     	    
+            add_test(NAME ${TEST} COMMAND ${TEST} ${EPHEM_DIR})
+
         # Special handling for CSPICE example
         elseif(${TEST} STREQUAL "test-cspice")
             find_library(CSPICE_LIB cspice REQUIRED)
             target_link_libraries(${TEST} PRIVATE solsys-cspice)
             add_test(NAME ${TEST} COMMAND ${TEST} ${EPHEM_DIR})
-        
+
         # All other examples
-     	else()
+        else()
             add_test(NAME ${TEST} COMMAND ${TEST})
         endif()
         

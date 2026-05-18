@@ -17,7 +17,7 @@ LIB ?= ../../lib
 # Our own include directory
 CPPFLAGS += -I../../include
 
-# Allow deprecated functions to be used interally
+# Allow deprecated functions to be used internally
 CFLAGS += -Wno-deprecated-declarations
 
 # We'll need math functions to link
@@ -227,7 +227,7 @@ help:
 	@echo
 	@echo "Syntax: make [target]"
 	@echo
-	@echo "The following tairgets are available:"
+	@echo "The following targets are available:"
 	@echo
 	@echo "  distro        (default) 'shared' targets and also 'local-dox' provided 'doxygen'" 
 	@echo "                is available, or was specified via the DOXYGEN variable (e.g. in"
@@ -236,7 +236,7 @@ help:
 	@echo "  shared        Builds the shared 'libsupernovas.so', 'libsolsys1.so', and" 
 	@echo "                'libsolsys2.so' libraries (linked to versioned ones)."
 	@echo "  solsys        Builds only the objects that may provide external 'solarsystem()'"
-	@echo "                call implentations (e.g. 'solsys1.o', 'eph_manager.o'...)."
+	@echo "                call implementations (e.g. 'solsys1.o', 'eph_manager.o'...)."
 	@echo "  all           All of the above."
 	@echo "  install       Install components (e.g. 'make prefix=<path> install')"
 	@echo "  clean         Removes intermediate products."

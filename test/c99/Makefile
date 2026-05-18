@@ -12,7 +12,7 @@ CPPFLAGS += -I../../include
 CFLAGS += -I../../include -I../../legacy -pg -Wall 
 LDFLAGS += -lm -lcurl -fprofile-arcs -ftest-coverage
 
-# Allow deprecated functions to be used interally
+# Allow deprecated functions to be used internally
 CFLAGS += -Wno-deprecated-declarations
 
 # cppcheck options for 'check' target. You can add additional options by

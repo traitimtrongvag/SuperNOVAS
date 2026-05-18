@@ -474,13 +474,13 @@
 /// @c_source
 #define NOVAS_SYSTEM_ICRS          "ICRS"
 
-/// The B1950 coordiante system as a string
+/// The B1950 coordinate system as a string
 /// @since 1.3
 /// @sa novas_set_catalog(), make_cat_object_sys(), make_redshifted_object_sys()
 /// @c_source
 #define NOVAS_SYSTEM_B1950         "B1950"
 
-/// The J2000 coordinate syste, as a string
+/// The J2000 coordinate system, as a string
 /// @since 1.3
 /// @sa novas_set_catalog(), make_cat_object_sys(), make_redshifted_object_sys()
 /// @c_source
@@ -741,7 +741,7 @@ enum novas_planet {
         3.0893e-9, 9.1338e-12, 2.120483e-6, 3.1397e-11, 0.0, 0.0 }
 
 /**
- * Bitwise mask defining a sefault set of gravitating bodies to use for deflection calculations in
+ * Bitwise mask defining a default set of gravitating bodies to use for deflection calculations in
  * reduced accuracy mode. (only apply gravitational deflection for the Sun.)
  *
  * @since 1.1
@@ -1548,7 +1548,7 @@ typedef struct novas_object {
  * @sa object
  * @c_source
  */
-#define NOVAS_MARS_INIT NOVAS_PLANET_INIT(NOVAS_MERCURY, "Mars")
+#define NOVAS_MARS_INIT NOVAS_PLANET_INIT(NOVAS_MARS, "Mars")
 
 /**
  * `object` initializer for the planet Jupiter
@@ -1865,7 +1865,7 @@ typedef struct novas_matrix {
 #define NOVAS_MATRIX_INIT {{{0.0}}}
 
 /**
- * novas_matric initializer for an indentity matrix
+ * novas_matrix initializer for an indentity matrix
  *
  * @hideinitializer
  * @since 1.3

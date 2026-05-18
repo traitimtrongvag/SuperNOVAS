@@ -18,6 +18,8 @@ Release candidate for the upcoming feature release, possibly around 1 August 202
    
  - #322: Fixed spelling of `Temperature::fahrenheit()` (thanks to CodeQL). (The misspelled `farenheit()` remains
    supported also for backward compatibility). 
+   
+ - #324: Fixed definition of `NOVAS_MARS_INIT` (was Mewrcury).
 
 ### Added
 
