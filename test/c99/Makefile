@@ -8,9 +8,13 @@ include ../../config.mk
 
 # Flags for measuring test coverage
 # Our own include directory
-CPPFLAGS += -I../../include
-CFLAGS += -I../../include -I../../legacy -pg -Wall 
-LDFLAGS += -lm -lcurl -fprofile-arcs -ftest-coverage
+CPPFLAGS += -I../../include -I../../legacy
+CFLAGS += -pg -Wall -fprofile-arcs -ftest-coverage
+LDFLAGS += -lm -fprofile-arcs -ftest-coverage
+
+ifeq ($(CURL_SUPPORT),1)
+  LDFLAGS += -lcurl
+endif
 
 # Allow deprecated functions to be used internally
 CFLAGS += -Wno-deprecated-declarations
@@ -25,21 +29,21 @@ COVFILES := $(subst .c,.c.gcov,$(SOURCES))
 
 TESTS := test-compat test-super test-errors
 
-ifeq ($(CALCEPH_SUPPORT), 1)
+ifeq ($(CALCEPH_SUPPORT),1)
   TESTS += test-calceph
   LDFLAGS += -lcalceph
   OBJECTS += solsys-calceph.o
   COVFILES += solsys-calceph.c.gcov
 endif
 
-ifeq ($(CSPICE_SUPPORT), 1)
+ifeq ($(CSPICE_SUPPORT),1)
   TESTS += test-cspice
   LDFLAGS += -lcspice
   OBJECTS += solsys-cspice.o
   COVFILES += solsys-cspice.c.gcov
 endif
 
-ifeq ($(CURL_SUPPORT), 1)
+ifeq ($(CURL_SUPPORT),1)
   TESTS += test-dummy-curl
 endif
 
@@ -50,13 +54,13 @@ run: clean-cov clean-data $(TESTS)
 	$(MAKE) check-compat
 	./test-super
 	./test-errors
-ifeq ($(CALCEPH_SUPPORT), 1)
+ifeq ($(CALCEPH_SUPPORT),1)
 	./test-calceph ../ephem
 endif
-ifeq ($(CSPICE_SUPPORT), 1)
+ifeq ($(CSPICE_SUPPORT),1)
 	./test-cspice ../ephem
 endif
-ifeq ($(CURL_SUPPORT), 1)
+ifeq ($(CURL_SUPPORT),1)
 	./test-dummy-curl
 endif
 
@@ -70,7 +74,7 @@ check-compat:
 	gcov -b $*
 
 .PRECIOUS: %.gcno %.gcda
-%.gcno %.gcda: src/%.c
+%.gcno %.gcda: %.c
 	$(MAKE) clean
 	$(MAKE) run
 
@@ -83,15 +87,11 @@ test-%.o: test-%.c | Makefile
 %.o: %.c | Makefile
 	$(CC) -c -o $@ $(CPPFLAGS) $(CFLAGS) -fprofile-arcs -ftest-coverage $<
 
-test-calceph: LDFLAGS += -lcalceph
-
-test-cspice: LDFLAGS += -lcspice
-
 # Static code analysis using 'cppcheck'
 .PHONY: analyze
 analyze:
 	@echo "   [analyze]"
-	@cppcheck $(CPPFLAGS) $(CHECKOPTS) $(SRC)
+	@cppcheck $(CPPFLAGS) $(CHECKOPTS) .
 
 .PHONY: clean-test
 clean-test:
@@ -121,7 +121,6 @@ help:
 	@echo "The following targets are available:"
 	@echo
 	@echo "  run           (default) Compiles and runs regression tests."
-	@echo "  coverage      Extracts test coverage data."
 	@echo "  analyze       Static analysis with cppcheck."
 	@echo "  clean         Removes intermediate products."
 	@echo "  distclean     Deletes all generated files."
