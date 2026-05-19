@@ -7,19 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [1.7.0-rc1] - 2026-05-18
+## [Unreleased]
 
 Release candidate for the upcoming feature release, possibly around 1 August 2026.
 
 ### Fixed
 
- - #321: `Constant::G` had missing digit in exponent, causing also `Constant::M_sun` and `Contant::M_earth` to be 
-   wrong (thanks to CodeQL).
+ - #321: `Constant::G` had missing digit in exponent, causing also `Constant::M_sun` to be wrong, while 
+   `Constant::M_earth` repeated the same definition for the Sun's mass  (thanks to CodeQL).
    
  - #322: Fixed spelling of `Temperature::fahrenheit()` (thanks to CodeQL). (The misspelled `farenheit()` remains
    supported also for backward compatibility). 
    
- - #324: Fixed definition of `NOVAS_MARS_INIT` (was Mewrcury).
+ - #324: Fixed definition of `NOVAS_MARS_INIT` (it had the number ID of Mercury).
 
 ### Added
 
