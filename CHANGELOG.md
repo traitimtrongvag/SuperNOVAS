@@ -57,11 +57,11 @@ Release candidate for the upcoming feature release, possibly around 1 August 202
    
  - #317: Avoid `memcmp()` in testing structs for equality, using new comparison functions instead.
 
- - #318: `Vector::equals()` to use the new `novas_equals_vector()` for consitent implementation between the C99 and 
+ - #318: `Vector::equals()` to use the new `novas_equals_vector()` for consistent implementation between the C99 and 
    C++ APIs.
    
  - #319: Updated `novas-calceph.c`, `novas-cspice.c`, and `iers.c` to use portable mutex definitions from 
-   `novas.mutex.h`.
+   `novas-mutex.h`.
 
  - Improved CMake installation of examples (no unintended files, C++ examples only if `ENABLE_CPP` option is used). 
 
@@ -95,7 +95,7 @@ MPP02 model of the Moon, and bringing various other improvements.
  - #293: `geo_posvel()` applied TOD to ICRS conversions twice for airborne observers, resulting in imprecise
    observer coordinates relative to the geocenter.
    
- - #296: Possible buffer overflow in `novas_print_dms()`. (thanks to aleberti)
+ - #296: Fixed potential buffer overflow in `novas_print_dms()`. (thanks to aleberti)
 
  - #305: `novas_geom_posvel()` returned velocities referenced to SSB, not to the observer.
 
@@ -107,7 +107,7 @@ MPP02 model of the Moon, and bringing various other improvements.
  - #256: New `novas_time_leap()` to simplify back calculating the leap seconds from a `novas_timespec` structure.
 
  - #281: Added a truncated version of semi-analytic ELP/MPP02 model of the Moon's position relative to the geocenter 
-   by Chapront &amp; Francou (2003), using up to about 3400 terms, and reaching accuracies to the 1 arcsec / 1km
+   by Chapront & Francou (2003), using up to about 3400 terms, and reaching accuracies to the 1 arcsec / 1km
    level (or better for the present era). 
    
  - #298: Added `cspice_clear_kernels()` to CSPICE plugin to close all kernels and free up the resources they use 
@@ -295,7 +295,7 @@ compatibility, and documentation.
  
  - #214: Reworked GCRS-CIRS transforms without `cio_basis()` (IERS method 2).
  
- - #217: Changed `terra()` to use GRS80 reference ellipsoid insread of the IERS 2003 ellipsoid. ITRF uses the GRS80 
+ - #217: Changed `terra()` to use GRS80 reference ellipsoid instead of the IERS 2003 ellipsoid. ITRF uses the GRS80 
    ellipsoid. The change restores the original NOVAS C behaviour.
  
  - #221: GitHub Actions CI now includes `Makefile` builds and tests for Mac OS X. (by kiranshila)
@@ -494,7 +494,7 @@ Feature release, with critical bug fixes.
    by `novas_refract_wavelength()`. By default 550 nm (0.55 &mu;m) is assumed.
    
  - #176: `novas_make_planet_orbit()` to generate Keplerian orbital elements for the major planets (sans Earth), and the 
-   Earth-Moon Barycenter (EMB), based on Standish &amp; Williams 1992. In most cases such orbitals can provide 
+   Earth-Moon Barycenter (EMB), based on Standish & Williams 1992. In most cases such orbitals can provide 
    arcmin-level precisions, especially for current dates.
 
  - #176:`novas_make_moon_orbit()` to generate geocentric Keplerian orbital elements for the Moon using the Chapront et 
@@ -506,7 +506,7 @@ Feature release, with critical bug fixes.
 
  - #176: `novas_moon_phase()` and `novas_next_moon_phase()` to calculate the Moon's apparent phase or the date/time 
    when it reaches a specific phase, respectively, using the Keplerian orbitals for the E-M Barycenter by Standish 
-   &amp; Williams 1992, and the geocentric orbitals of the Moon by Chapront et al. 2002.
+   & Williams 1992, and the geocentric orbitals of the Moon by Chapront et al. 2002.
  
  - #176: `novas_orbital_native_posvel()` to calculate orbital positions in the native system, in which the orbital 
    is defined (e.g. ecliptic coordinates for planetary orbits).
@@ -520,10 +520,10 @@ Feature release, with critical bug fixes.
    co-rotating systems are not inertial systems.
 
  - #186: Added `NOVAS_RADIO_REFRACTION` and `NOVAS_WAVE_REFRACTION` to `enum novas_refraction_model`, for referencing 
-   the Berman &amp; Rockwell 1976 radio-wave model, or the IAU / SOFA wavelength-dependent model, respectively.
+   the Berman & Rockwell 1976 radio-wave model, or the IAU / SOFA wavelength-dependent model, respectively.
    
  - #191: Added `tt2tdb_hp()` (high-precision) and `tt2tdb_fp()` (flexible-precision) functions for calculating the
-   TDB-TT time difference (in seconds), with up to 0.1 &mu;s accuracy based on Fairhead &amp; Bretagnon 1990.
+   TDB-TT time difference (in seconds), with up to 0.1 &mu;s accuracy based on Fairhead & Bretagnon 1990.
    
  - #194: Added documentation under `resources/` for a side-by-side example comparison with __astropy__.
  
@@ -621,8 +621,8 @@ changes to improve performance.
    `solsys-ephem.c` inadvertently definining these functions when `BUILTIN_SOLSYS_EPHEM` was set to 1 (default) during
    the build, even though it was not supposed to.
    
- - #156: `obs_posvel()` called `geo_posvel()` with TDB instead of TT. It less than a 2 ms difference, so not typically
-   signifficant, unless &lt;10-m level poitioning is required for Earth-orbiting satellites.
+ - #156: `obs_posvel()` called `geo_posvel()` with TDB instead of TT. It is less than a 2 ms difference, so not 
+   typically significant, unless &lt;10-m level positioning is required for Earth-orbiting satellites.
    
 ### Added
 
@@ -647,7 +647,7 @@ changes to improve performance.
    respectively. The parallactic angle (PA) can be useful to convert local Cartesian offsets (e.g. from a flat image 
    or detector array) between the local horizontal and equatorial orientations, e.g. via the newly added 
    `novas_h2e_offset()` or `novas_e2h_offset()` functions. The conversion between offsets and absolute coordinates 
-   usually requires a WCS projections, such as described in Calabretta &amp; Greisen 2002.
+   usually requires a WCS projection, such as described in Calabretta & Greisen 2002.
    
  - #113: New `novas_sep()`, `novas_equ_sep()`, and `novas_object_sep()` functions can be used to calculate the precise 
    apparent distance between to spherical or equatorial locations, or between two sources, respectively. 
@@ -698,7 +698,7 @@ changes to improve performance.
    floating point values for SuperNOVAS, and return the parse position after the time/angle specification.
 
  - #135: New `novas_str_hours()` and `novas_str_degrees()` for the simplest conversion of strings in decimal or 
-   HMS/DMS formats to floating point values for SuperNOVAS (without retruning a parse position).
+   HMS/DMS formats to floating point values for SuperNOVAS (without returning a parse position).
 
  - #137: New `novas_epoch()` to convert string coordinate system specifications to the Julian date of the corresponding
    epoch, and new `make_cat_object_sys()` and `make_redshifted_object_sys()` to make it simpler to define ICRS catalog 
@@ -899,7 +899,7 @@ Planet Center (MPC) for asteroids, comets, and Near-Earth-Objects (NEOs). And, m
    
  - Added `-g` to default `CFLAGS` as a matter of GNU best practice.
  
- - Static library is now named `ibsupernovas.a`, which is symlinked to `libnovas.a` for back compatibility.
+ - Static library is now named `libsupernovas.a`, which is symlinked to `libnovas.a` for back compatibility.
  
  - `readeph0.c` moved to `examples/`. It's a dummy legacy NOVAS C implementation that is not really needed in 
    SuperNOVAS.
