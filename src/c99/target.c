@@ -60,6 +60,7 @@
 extern int strcasecmp(const char *s1, const char *s2);
 #elif defined(_MSC_VER)
 #  define strcasecmp _stricmp                       /// MSVC equivalent
+#  define strtok_r   strtok_s                       /// MSVC equivalent
 #endif
 
 static int is_case_sensitive = 0; ///< (boolean) whether object names are case-sensitive.
@@ -95,7 +96,7 @@ static int is_case_sensitive = 0; ///< (boolean) whether object names are case-s
  *                      relevant.
  * @param ra            [h] Right ascension of the object.
  * @param dec           [deg] Declination of the object.
- * @return              0 if successful, or else -1 in the source is NULL (errno set to EINVAL) or
+ * @return              0 if successful, or else -1 if the source is NULL (errno set to EINVAL) or
  *                      1 if the name is too long (errno is set to ERANGE).
  *
  * @since 1.5
@@ -136,7 +137,7 @@ int novas_init_cat_entry(cat_entry *restrict source, const char *restrict name, 
  *                      'HIP' for Hipparcos, 'TY2' for Tycho-2; or 'ICRS', 'B1950', 'J2000'. It may
  *                      be NULL if not relevant.
  * @param num           Object's number in catalog.
- * @return              0 if successful, or else -1 in the source is NULL (errno set to EINVAL),
+ * @return              0 if successful, or else -1 if the source is NULL (errno set to EINVAL),
  *                      or 2 if the catalog name is too long (errno is set to ERANGE).
  *
  * @since 1.5
@@ -167,7 +168,7 @@ int novas_set_catalog(cat_entry *restrict source, const char *restrict catalog, 
  *
  * @param[out] source Output structure to populate with the parameters.
  * @param v_kms       [km/s] Radial velocity of source w.r.t. the Solar-System Barycenter (SSB).
- * @return            0 if successful, or else -1 in the source is NULL (errno is set to EINVAL)
+ * @return            0 if successful, or else -1 if the source is NULL (errno is set to EINVAL)
  *                    or if the velocity exceeds the speed of light (errno set to ERANGE).
  *
  * @since 1.5
@@ -194,7 +195,7 @@ int novas_set_ssb_vel(cat_entry *source, double v_kms) {
  * @param[out] source  Output structure to populate with the parameters.
  * @param v_kms        [km/s] Radial velocity of source w.r.t. the Local Standard of Rest (LSR).
  * @param epoch        [yr] Coordinate epoch.
- * @return             0 if successful, or else -1 in the source is NULL (errno is set to EINVAL)
+ * @return             0 if successful, or else -1 if the source is NULL (errno is set to EINVAL)
  *                     or if the velocity exceeds the speed of light (errno set to ERANGE).
  *
  * @since 1.5
@@ -218,7 +219,7 @@ int novas_set_lsr_vel(cat_entry *source, double epoch, double v_kms) {
  * @param[out] source  Output structure to populate with the parameters.
  * @param z            [-1:inf] The redshift measure _z_, defined as (1 + _z_) =
  *                     sqrt((1 + _v_/_c_) / (1 - _v_/_c_))
- * @return             0 if successful, or else -1 in the source is NULL (errno is set to EINVAL)
+ * @return             0 if successful, or else -1 if the source is NULL (errno is set to EINVAL)
  *                     or if the redshift is invalid (errno set to ERANGE).
  *
  * @since 1.5
@@ -244,7 +245,7 @@ int novas_set_redshift(cat_entry *source, double z) {
  * @param[out] source  Output structure to populate with the parameters.
  * @param pm_ra        [mas/yr] Proper motion in right ascension.
  * @param pm_dec       [mas/yr] Proper motion in declination.
- * @return             0 if successful, or else -1 in the source is NULL (errno is set to EINVAL).
+ * @return             0 if successful, or else -1 if the source is NULL (errno is set to EINVAL).
  *
  * @since 1.5
  * @author Attila Kovacs
@@ -265,7 +266,7 @@ int novas_set_proper_motion(cat_entry *source, double pm_ra, double pm_dec) {
  *
  * @param[out] source  Output structure to populate with the parameters.
  * @param mas          [mas] Parallax
- * @return             0 if successful, or else -1 in the source is NULL (errno is set to EINVAL).
+ * @return             0 if successful, or else -1 if the source is NULL (errno is set to EINVAL).
  *
  * @since 1.5
  * @author Attila Kovacs
@@ -285,7 +286,7 @@ int novas_set_parallax(cat_entry *source, double mas) {
  *
  * @param[out] source  Output structure to populate with the parameters.
  * @param parsecs      [pc] distance
- * @return             0 if successful, or else -1 in the source is NULL (errno is set to EINVAL).
+ * @return             0 if successful, or else -1 if the source is NULL (errno is set to EINVAL).
  *
  * @since 1.5
  * @author Attila Kovacs
@@ -302,7 +303,7 @@ int novas_set_distance(cat_entry *source, double parsecs) {
  * provided at once.
  *
  * Alternatively, you may use `novas_init_cat_entry()` to initialize just with the name and
- * R.A./Dec coordinates, and then add further information step-by-step as needed, icluding using
+ * R.A./Dec coordinates, and then add further information step-by-step as needed, including using
  * alternative parameters (SSB vs. LSR velocity, vs. redshift; parallax vs. distance). The latter
  * approach provides more flexibility, and will result in more readable code, which is also easier
  * to debug.
@@ -526,7 +527,7 @@ static int cat_to_icrs(cat_entry *restrict star, const char *restrict system) {
  * @param system         Input catalog coordinate system epoch, e.g. "ICRS", "B1950.0", "J2000.0",
  *                      "FK4", "FK5", or "HIP". In general, any Besselian or Julian year epoch can
  *                      be used by year (e.g. "B1933.193" or "J2022.033"), or else the fixed value
- *                      listed. If 'B' or 'J' is ommitted in front of the epoch year, then Besselian
+ *                      listed. If 'B' or 'J' is omitted in front of the epoch year, then Besselian
  *                      epochs are assumed prior to 1984.0, and Julian epochs after. (See
  *                      `novas_epoch()` for more).
  * @param[out] source   Pointer to the celestial object data structure to be populated with
@@ -639,7 +640,7 @@ int make_redshifted_object(const char *name, double ra, double dec, double z, ob
  * @param system        Input catalog coordinate system epoch, e.g. "ICRS", "B1950.0", "J2000.0",
  *                      "FK4", "FK5", or "HIP". In general, any Besselian or Julian year epoch
  *                      can be used by year (e.g. "B1933.193" or "J2022.033"), or else the fixed
- *                      value listed. If 'B' or 'J' is ommitted in front of the epoch year, then
+ *                      value listed. If 'B' or 'J' is omitted in front of the epoch year, then
  *                      Besselian epochs are assumed prior to 1984.0.
  * @param z             Redhift value (&lambda;<sub>obs</sub> / &lambda;<sub>rest</sub> - 1 =
  *                      f<sub>rest</sub> / f<sub>obs</sub> - 1).
@@ -770,7 +771,7 @@ int starvectors(const cat_entry *restrict star, double *restrict pos, double *re
     return novas_error(-1, EINVAL, fn, "NULL input cat_entry");
 
   if(pos == motion)
-    return novas_error(-1, EINVAL, fn, "identical output pos and vel 3-vectors @ %p", pos, motion);
+    return novas_error(-1, EINVAL, fn, "identical output pos and vel 3-vectors @ %p", pos);
 
   // If parallax is unknown, undetermined, or zero, set it to 1e-6
   // milliarcsecond, corresponding to a distance of 1 gigaparsec.
@@ -807,6 +808,7 @@ int starvectors(const cat_entry *restrict star, double *restrict pos, double *re
  * @param name    The planet name, or that for the "Sun", "Moon" or "SSB" (case insensitive).
  *                The spelled out "Solar System Barycenter" is also recognized with either spaces,
  *                hyphens ('-') or underscores ('_') separating the case insensitive words.
+ *                Only up to 63 characters (not including termination) of the input are processed.
  * @return        The NOVAS major planet ID, or -1 (errno set to EINVAL) if the input name is
  *                NULL or if there is no match for the name provided.
  *
@@ -818,8 +820,10 @@ int starvectors(const cat_entry *restrict star, double *restrict pos, double *re
 enum novas_planet novas_planet_for_name(const char *restrict name) {
   static const char *fn = "novas_planet_for_name()";
   static const char *names[] = NOVAS_PLANET_NAMES_INIT;
+  static const char delims[] = " \t-_";
 
-  char *tok;
+  char buf[64];
+  char *tok, *context = NULL;
   int i;
 
   if(!name)
@@ -833,13 +837,17 @@ enum novas_planet novas_planet_for_name(const char *restrict name) {
       return (enum novas_planet) i;
 
   // Check for Solar System Barycenter (and variants)
-  tok = strtok(strdup(name), " \t-_");
+  strncpy(buf, name, sizeof(buf) - 1);
+  buf[sizeof(buf) - 1] = '\0';
+
+  tok = strtok_r(buf, delims, &context);
   if(strcasecmp("solar", tok) == 0) {
-    tok = strtok(NULL, " \t-_");
+    tok = strtok_r(NULL, delims, &context);
     if(tok && strcasecmp("system", tok) == 0) {
-      tok = strtok(NULL, " \t-_");
-      if(tok && strcasecmp("barycenter", tok) == 0)
+      tok = strtok_r(NULL, delims, &context);
+      if(tok && strcasecmp("barycenter", tok) == 0) {
         return NOVAS_SSB;
+      }
     }
   }
 
