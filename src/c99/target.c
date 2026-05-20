@@ -85,7 +85,7 @@ static int is_case_sensitive = 0; ///< (boolean) whether object names are case-s
  * 3. (optional) Set proper motions (mas/yr), as needed, using `novas_set_proper_motion()`.
  * 4. (optional) Set parallax, as needed, via either:
  *     - parallax (mas) using `novas_set_parallax()`, or
- *     - distance (parcsec) using `novas_set_distance()`.
+ *     - distance (parsec) using `novas_set_distance()`.
  * 5. (optional) Assign catalog info if desired via `novas_set_catalog()`.
  *
  * After the initialization (Step 1), order does not matter.
@@ -213,7 +213,7 @@ int novas_set_lsr_vel(cat_entry *source, double epoch, double v_kms) {
 }
 
 /**
- * Sets a redhift for a catalog source, as a relativistic measure of velocity.
+ * Sets a redshift for a catalog source, as a relativistic measure of velocity.
  *
  * @param[out] source  Output structure to populate with the parameters.
  * @param z            [-1:inf] The redshift measure _z_, defined as (1 + _z_) =
@@ -227,12 +227,14 @@ int novas_set_lsr_vel(cat_entry *source, double epoch, double v_kms) {
  * @sa novas_set_ssb_vel(), novas_init_cat_entry()
  */
 int novas_set_redshift(cat_entry *source, double z) {
+  static const char *fn = "novas_set_redshift";
+
   double v = novas_z2v(z);
 
   if(isnan(v))
-    return novas_error(-1, ERANGE, "novas_set_redshift", "invalid redshift value: %f\n", z);
+    return novas_error(-1, ERANGE, fn, "invalid redshift value: %f\n", z);
 
-  prop_error("novas_set_lsr_vel", novas_set_ssb_vel(source, v), 0);
+  prop_error(fn, novas_set_ssb_vel(source, v), 0);
   return 0;
 }
 
@@ -291,7 +293,7 @@ int novas_set_parallax(cat_entry *source, double mas) {
  * @sa novas_set_distance(), novas_init_cat_entry()
  */
 int novas_set_distance(cat_entry *source, double parsecs) {
-  prop_error("novas_set_lsr_vel", novas_set_parallax(source, 1000.0 / parsecs), 0);
+  prop_error("novas_set_distance", novas_set_parallax(source, 1000.0 / parsecs), 0);
   return 0;
 }
 
@@ -501,7 +503,7 @@ int make_cat_object(const cat_entry *star, object *source) {
 }
 
 static int cat_to_icrs(cat_entry *restrict star, const char *restrict system) {
-  if(strcasecmp(system, NOVAS_SYSTEM_ICRS) != 0 && strcasecmp(system, NOVAS_SYSTEM_FK6)) {
+  if(strcasecmp(system, NOVAS_SYSTEM_ICRS) != 0 && strcasecmp(system, NOVAS_SYSTEM_FK6) != 0) {
     double jd = novas_epoch(system);
     if(isnan(jd))
       return novas_trace("cat_to_icrs", -1, 0);
