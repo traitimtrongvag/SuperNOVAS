@@ -79,12 +79,12 @@ static const double R[] = NOVAS_PLANET_RADII_INIT; ///< [m]
 
 /**
  * Computes the Terrestrial Time (TT) based Julian date corresponding to a Barycentric
- * Dynamical Time (TDB) Julian date, and retuns th TDB-TT time difference also. It has a
+ * Dynamical Time (TDB) Julian date, and returns the TDB-TT time difference also. It has a
  * maximum error of 10 &mu;s between for dates 1600 and 2200.
  *
  * This function is wrapped by `tt2tdb()`, which is typically a lot easier to use as it
  * returns the time difference directly, which can then be used to convert time in both
- * directions with greater ease. For exable to convert a TT-based date to a TDB-based date:
+ * directions with greater ease. For example, to convert a TT-based date to a TDB-based date:
  *
  * ```c
  *   double TDB = TT + tt2tdb(TT) / 86400.0;
@@ -542,7 +542,7 @@ static double tt_offset(const novas_timespec *ts, enum novas_timescale timescale
  * specified to picosecond accuracy, if needed.
  *
  * The accuracy of Barycentric Time measures (TDB and TCB) relative to other time measures is
- * limited by the precision of `tbd2tt()` implementation, to around 10 &mu;s.
+ * limited by the precision of `tdb2tt()` implementation, to around 10 &mu;s.
  *
  *
  * REFERENCES:
@@ -735,7 +735,7 @@ double novas_get_time(const novas_timespec *restrict time, enum novas_timescale 
  * few microseconds typically.
  *
  * The accuracy of Barycentric Time measures (TDB and TCB) relative to other time measures is
- * limited by the precision of the `tbd2tt()` implemenation, to around 10 &mu;s.
+ * limited by the precision of the `tdb2tt()` implemenation, to around 10 &mu;s.
  *
  * REFERENCES:
  *
@@ -952,7 +952,7 @@ int novas_set_unix_time(time_t unix_time, long nanos, int leap, double dut1, nov
 }
 
 /**
- * Sets the time eith the UNIX time obtained from the system clock. This is only as precise as the
+ * Sets the time with the UNIX time obtained from the system clock. This is only as precise as the
  * system clock is. You should generally make sure the sytem clock is synchronized to a time reference
  * e.g. via ntp, preferably to a local time reference.
  *
