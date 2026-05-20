@@ -22,6 +22,8 @@ Release candidate for the upcoming feature release, possibly around 1 August 202
  - #324: Fixed definition of `NOVAS_MARS_INIT` (it had the number ID of Mercury).
  
  - Eliminated memleak in `novas_planet_for_name()`. Also, it no longer does alloc to copy input.
+ 
+ - Fixed definition of `NOVAS_TRANSFORM_TYPES` in `novas.h`.
 
 ### Added
 

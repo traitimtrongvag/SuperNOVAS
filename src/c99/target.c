@@ -543,7 +543,7 @@ static int cat_to_icrs(cat_entry *restrict star, const char *restrict system) {
  * @author Attila Kovacs
  */
 int make_cat_object_sys(const cat_entry *star, const char *restrict system, object *source) {
-  static const char *fn = "make_cat_object_epoch";
+  static const char *fn = "make_cat_object_sys";
 
   if(!system)
     return novas_error(-1, EINVAL, fn, "coordinate system is NULL");
@@ -617,7 +617,7 @@ int make_redshifted_cat_entry(const char *name, double ra, double dec, double z,
  * @author Attila Kovacs
  */
 int make_redshifted_object(const char *name, double ra, double dec, double z, object *source) {
-  static const char *fn = "make_redshifted_source";
+  static const char *fn = "make_redshifted_object";
 
   cat_entry c;
 
@@ -660,7 +660,7 @@ int make_redshifted_object(const char *name, double ra, double dec, double z, ob
  * @author Attila Kovacs
  */
 int make_redshifted_object_sys(const char *name, double ra, double dec, const char *restrict system, double z, object *source) {
-  static const char *fn = "make_redshifted_object_epoch";
+  static const char *fn = "make_redshifted_object_sys";
 
   if(!system)
     return novas_error(-1, EINVAL, fn, "coordinate system is NULL");

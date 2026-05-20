@@ -1143,7 +1143,7 @@ enum novas_transform_type {
  * @hideinitializer
  * @sa enum novas_transform_type
  */
-#define NOVAS_TRANSFORM_TYPES     (ICRS_TO_J2000)
+#define NOVAS_TRANSFORM_TYPES     (CHANGE_ICRS_TO_J2000 + 1)
 
 #ifndef _EXCLUDE_DEPRECATED
 /**

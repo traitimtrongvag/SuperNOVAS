@@ -80,7 +80,7 @@ static const double R[] = NOVAS_PLANET_RADII_INIT; ///< [m]
 /**
  * Computes the Terrestrial Time (TT) based Julian date corresponding to a Barycentric
  * Dynamical Time (TDB) Julian date, and returns the TDB-TT time difference also. It has a
- * maximum error of 10 &mu;s between for dates 1600 and 2200.
+ * maximum error of 10 &mu;s between 1600 and 2200.
  *
  * This function is wrapped by `tt2tdb()`, which is typically a lot easier to use as it
  * returns the time difference directly, which can then be used to convert time in both
@@ -735,7 +735,7 @@ double novas_get_time(const novas_timespec *restrict time, enum novas_timescale 
  * few microseconds typically.
  *
  * The accuracy of Barycentric Time measures (TDB and TCB) relative to other time measures is
- * limited by the precision of the `tdb2tt()` implemenation, to around 10 &mu;s.
+ * limited by the precision of the `tdb2tt()` implementation, to around 10 &mu;s.
  *
  * REFERENCES:
  *
@@ -753,7 +753,7 @@ double novas_get_time(const novas_timespec *restrict time, enum novas_timescale 
  * @param[out] ijd    [day] The integer part of the Julian date in the requested timescale. It may
  *                    be NULL if not required.
  * @return            [day] The fractional part of the Julian date in the requested timescale or
- *                    NAN is the time argument is NULL (ijd will be set to -1 also).
+ *                    NAN if the time argument is NULL (ijd will be set to -1 also).
  *
  * @since 1.1
  * @author Attila Kovacs
@@ -1316,7 +1316,7 @@ int novas_print_timescale(enum novas_timescale scale, char *restrict buf) {
  * Returns the Greenwich (apparent) Sidereal Time (GST/GaST) for a given astronomical time
  * specification. If you need mean sidereal time (GMST), you should use sidereal_time() instead.
  *
- * @param time      The astronomoical time specification.
+ * @param time      The astronomical time specification.
  * @param accuracy  NOVAS_FULL_ACCURACY (0) or NOVAS_REDUCED_ACCURACY (1).
  * @return          [h] The Greenwich apparent Sidereal Time (GST / GaST) in the [0:24) hour
  *                  range, or else NAN if there was an error (`errno` will indicate the type of
@@ -1340,7 +1340,7 @@ double novas_time_gst(const novas_timespec *restrict time, enum novas_accuracy a
  * Returns the Local (apparent) Sidereal Time (LST/LaST) for a given astronomical time
  * specification and observer location.
  *
- * @param time      The astronomoical time specification.
+ * @param time      The astronomical time specification.
  * @param lon       [deg] The geodetic longitude of the observer.
  * @param accuracy  NOVAS_FULL_ACCURACY (0) or NOVAS_REDUCED_ACCURACY (1).
  * @return          [h] The Local apparent Sidereal Time (LST / LaST) in the [0:24) hour range, or
@@ -1362,7 +1362,7 @@ double novas_time_lst(const novas_timespec *restrict time, double lon, enum nova
 /**
  * Returns the leap seconds component of an astronomical time specification.
  *
- * @param time    The astronomoical time specification.
+ * @param time    The astronomical time specification.
  * @return        [s] The leap seconds that was used to initialize the time specification, or -1
  *                if the input pointer is NULL (errno is set to EINVAL).
  *
