@@ -30,8 +30,8 @@ static void default_error_handler(const char *fmt, va_list args) {
   vfprintf(stderr, fmt, args);
 }
 
-/// Active error handler. NULL means "silenced".
-static novas_error_handler error_hanfler_fn = default_error_handler;
+/// Active error messages handler
+static novas_error_handler error_handler_fn = default_error_handler;
 
 /**
  * Replaces the trace / error message handler. Pass NULL to restore the default error reporting to
@@ -46,18 +46,18 @@ static novas_error_handler error_hanfler_fn = default_error_handler;
  * @sa novas_debug()
  */
 novas_error_handler novas_set_error_handler(novas_error_handler handler) {
-  novas_error_handler prev = error_hanfler_fn;
-  error_hanfler_fn = handler ? handler : default_error_handler;
+  novas_error_handler prev = error_handler_fn;
+  error_handler_fn = handler ? handler : default_error_handler;
   return prev;
 }
 
 static void novas_emit(const char *fmt, ...) {
-  if(!error_hanfler_fn)
+  if(!error_handler_fn)
     return;
   {
     va_list args;
     va_start(args, fmt);
-    error_hanfler_fn(fmt, args);
+    error_handler_fn(fmt, args);
     va_end(args);
   }
 }
@@ -188,9 +188,9 @@ void novas_set_errno(int en, const char *restrict from, const char *restrict des
   va_list varg;
 
   va_start(varg, desc);
-  if(novas_get_debug_mode() != NOVAS_DEBUG_OFF && error_hanfler_fn) {
+  if(novas_get_debug_mode() != NOVAS_DEBUG_OFF && error_handler_fn) {
     novas_emit("\n  ERROR! %s: ", from);
-    error_hanfler_fn(desc, varg);
+    error_handler_fn(desc, varg);
     novas_emit("\n");
   }
   va_end(varg);
@@ -216,9 +216,9 @@ int novas_error(int ret, int en, const char *restrict from, const char *restrict
   va_list varg;
 
   va_start(varg, desc);
-  if(novas_get_debug_mode() != NOVAS_DEBUG_OFF && error_hanfler_fn) {
+  if(novas_get_debug_mode() != NOVAS_DEBUG_OFF && error_handler_fn) {
     novas_emit("\n  ERROR! %s: ", from);
-    error_hanfler_fn(desc, varg);
+    error_handler_fn(desc, varg);
     novas_emit(" [=> %d]\n", ret);
   }
   va_end(varg);
