@@ -228,7 +228,7 @@ int novas_error(int ret, int en, const char *restrict from, const char *restrict
 }
 
 /**
- * (_for internal use only_) Calculates the distance-swuared between two 3-vectors.
+ * (_for internal use only_) Calculates the distance-squared between two 3-vectors.
  *
  * @param v1    Pointer to a 3-component (x, y, z) vector. The argument cannot be NULL
  * @param v2    Pointer to another 3-component (x, y, z) vector. The argument cannot
@@ -289,7 +289,7 @@ double novas_vdot(const double *v1, const double *v2) {
  * dynamic equator. The two dates are considered equal if they agree within 10<sup>-7</sup>
  * days (or about 10 ms).
  *
- * For reference, woth a precession rate of ~50"/year, the precession in in 10 ms is
+ * For reference, with a precession rate of ~50"/year, the precession in in 10 ms is
  * on the order of 0.015 uas, which is well below the promised sub-uas precision even in
  * for the highest accuracy calculations. As such it is safe to use the reduced accuracy time
  * check for cached precession-related quantities.
@@ -313,7 +313,7 @@ int novas_time_equals(double jd1, double jd2) {
  * days (or about 10 ms) of each other in reduced accuracy or if they agree within 10<sup>-9</sup>
  * days (or about 100 us), corresponding to double-precision limits, in full accuracy mode.
  *
- * For reference, woth a precession rate of ~50"/year, the precession in in 10 ms is
+ * For reference, with a precession rate of ~50"/year, the precession in in 10 ms is
  * on the order of 0.015 uas, which is well below the promised sub-uas precision even in
  * for the highest accuracy calculations. As such it is safe to use the reduced accuracy time
  * check for cached precession-related quantities.
@@ -796,10 +796,9 @@ double novas_equ_sep(double ra1, double dec1, double ra2, double dec2) {
   return novas_sep(15.0 * ra1, dec1, 15.0 * ra2, dec2);
 }
 
-
 /**
  * Breaks down a value into hours/degrees, minutes, seconds, and a subsecond part given the
- * number of decimals requested. The last sigit is rounded as appropriate.
+ * number of decimals requested. The last digit is rounded as appropriate.
  *
  * @param value     The input hours or degrees
  * @param decimals  Number of requested decimals for the sub-second component
