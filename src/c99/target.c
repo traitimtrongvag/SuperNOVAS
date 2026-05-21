@@ -157,6 +157,8 @@ int novas_set_catalog(cat_entry *restrict source, const char *restrict catalog, 
     return 0;
 
   strncpy(source->catalog, catalog, SIZE_OF_CAT_NAME - 1);
+  source->catalog[SIZE_OF_CAT_NAME - 1] = '\0';
+
   if(strlen(catalog) >= SIZE_OF_CAT_NAME)
     return novas_error(2, ERANGE, fn, "Input catalog ID is too long (%d > %d)", (int) strlen(catalog), SIZE_OF_CAT_NAME - 1);
 
