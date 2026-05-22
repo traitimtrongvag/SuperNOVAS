@@ -422,7 +422,7 @@ For embedded ARM, this may look like:
        static
 ```
 
-where we cross-compile using the arm-none-eabi-gcc compiler with target-specific flags.
+where we cross-compile using the `arm-none-eabi-gcc` compiler with target-specific flags.
 
 For WebAssembly with [Emscripten](https://emscripten.org/), use `emmake` which substitutes the compiler and archiver
 automatically:
