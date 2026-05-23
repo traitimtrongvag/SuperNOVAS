@@ -296,14 +296,15 @@ double novas_vdot(const double *v1, const double *v2) {
 }
 
 /**
- * (_for internal use only_) Checks if two Julian dates are equal with regard to the
- * dynamic equator. The two dates are considered equal if they agree within 10<sup>-7</sup>
- * days (or about 10 ms).
+ * (_for internal use only_) Checks if two Julian dates are equal with regard to the dynamic
+ * equator. The two dates are considered equal if they agree within 10<sup>-7</sup> days (or about
+ * 10 ms).
  *
- * For reference, with a precession rate of ~50"/year, the precession in in 10 ms is
- * on the order of 0.015 uas, which is well below the promised sub-uas precision even in
- * for the highest accuracy calculations. As such it is safe to use the reduced accuracy time
- * check for cached precession-related quantities.
+ * For reference, with a precession rate of ~50"/year, the precession in in 10 ms is on the order
+ * of 0.015 &mu;as, which is well below the promised sub-&mu;as precision even for the highest
+ * accuracy calculations. As such it is safe to use the reduced accuracy time check for cached
+ * precession-related quantities. However, coordinates in an non-inertial Earth-rotating frame
+ * will be accurate to ~150 mas only, so not so safe for precise Earth rotation measures.
  *
  * @param jd1       [day] a Julian date (in any time measure)
  * @param jd2       [day] a Julian date in the same time measure as the first argument
@@ -319,17 +320,15 @@ int novas_time_equals(double jd1, double jd2) {
 }
 
 /**
- * (_for internal use only_) Checks if two Julian dates are precisely equal with regard to
- * the dynamic equator. The two dates are considered equal if they agree within 10<sup>-7</sup>
- * days (or about 10 ms) of each other in reduced accuracy or if they agree within 10<sup>-9</sup>
- * days (or about 100 us), corresponding to double-precision limits, in full accuracy mode.
+ * (_for internal use only_) Checks if two Julian dates are precisely equal with regard to the
+ * dynamic equator. The two dates are considered equal if they agree within 10<sup>-9</sup> days
+ * (or about 100 &mu;s) of each other.
  *
- * For reference, with a precession rate of ~50"/year, the precession in in 10 ms is
- * on the order of 0.015 uas, which is well below the promised sub-uas precision even in
- * for the highest accuracy calculations. As such it is safe to use the reduced accuracy time
- * check for cached precession-related quantities.
+ * For reference, with a precession rate of ~50"/year, the precession in in 100 &mu;s is on the
+ * order of 0.00015 &mu;as, which is way below the promised sub-&mu;as precision even in for the
+ * highest accuracy calculations. However, coordinates in a non-inertial Earth-rotating frame will
+ * be accurate to ~1.5 mas only, which is still not very precise Earth rotation measures.
  *
- * @param accuracy  NOVAS_FULL_ACCURACY (0) or NOVAS_REDUCED_ACCURACY (1)
  * @param jd1       [day] a Julian date (in any time measure)
  * @param jd2       [day] a Julian date in the same time measure as the first argument
  * @return          TRUE (1) if the two dates are effectively the same at the precision of
@@ -1114,11 +1113,11 @@ int novas_offset_by(double lon, double lat, double direction, double distance, d
  * Calculates offset equatorial coordinates at some distance away from the input coordinates along
  * a great circle which crosses the input position at the specified position angle.
  *
- * @param ra              [deg] reference point right ascension (R.A.)
+ * @param ra              [h] reference point right ascension (R.A.)
  * @param dec             [deg] reference point declination
  * @param direction       [deg] direction (measured East of North).
  * @param distance        [deg] offset distance on great circle
- * @param[out] out_ra     [deg] right ascension (R.A.) at offset position in [0:24) range. It may
+ * @param[out] out_ra     [h] right ascension (R.A.) at offset position in [0:24) range. It may
  *                        be NULL if not needed.
  * @param[out] out_dec    [deg] declination at offset position in [-&pi/2:&pi;/2] range. It may be
  *                        NULL if not needed.
