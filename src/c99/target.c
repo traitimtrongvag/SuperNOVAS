@@ -533,7 +533,7 @@ static int cat_to_icrs(cat_entry *restrict star, const char *restrict system) {
  *                      epochs are assumed prior to 1984.0, and Julian epochs after. (See
  *                      `novas_epoch()` for more).
  * @param[out] source   Pointer to the celestial object data structure to be populated with
- *                      the corresponding ICRS catalog coordinates, after appying proper-motion
+ *                      the corresponding ICRS catalog coordinates, after applying proper-motion
  *                      and precession corrections as appropriate.
  * @return              0 if successful, or -1 if any argument is NULL or if the input 'system' is
  *                      invalid, or else 5 if 'name' is too long.

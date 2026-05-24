@@ -1140,7 +1140,7 @@ int novas_offset_by(double lon, double lat, double direction, double distance, d
  *                        input declination is outside of the [-90:90] range.
  *
  * @since 1.7
- * @sa Attila Kovacs
+ * @author Attila Kovacs
  *
  * @sa novas_offset_by(), novas_equ_sep()
  */

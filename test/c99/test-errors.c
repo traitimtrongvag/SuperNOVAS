@@ -2944,7 +2944,7 @@ static int test_fetch_eop() {
   url = get_resource_url("C01-start.txt");
   if(!url) fprintf(stderr, "WARNING! missing resource 'C01-start.txt': skipping tests requiring it.\n");
   else {
-    if(check("set_eop_url:bad-start", 0, novas_set_eop_url(EOP_C01_IAU2000, 2020, url))) n++;
+    if(check("set_eop_url:bad-start", -1, novas_set_eop_url(EOP_C01_IAU2000, 2020, url))) n++;
     if(check("fetch_eop:bad-start", -1,  novas_fetch_eop(NOVAS_JD_MJD0 - 4650.0, 0, &eop))) n++;
   }
 

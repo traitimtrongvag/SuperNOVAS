@@ -800,9 +800,10 @@ int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *u
 #else
   static int initialized;
   char *discard;
+  int status = 0;
 
   if(url && !url[0])
-    return novas_error(-1, EINVAL, fn, "empty URL", (int) series);
+    return novas_error(-1, EINVAL, fn, "empty URL for series %d", (int) series);
 
   if(!initialized) {
     atexit(cleanup_eop_urls_async);
@@ -849,18 +850,19 @@ int novas_set_eop_url(enum novas_eop_series series, int itrf_year, const char *u
         return novas_trace(fn, -1, 0);
       return 0;
     case EOP_RAPID_IAU2000:
-      checkout_eop_file_async(&rapid, 0);
+      status = checkout_eop_file_async(&rapid, 0);
       break;
     case EOP_C04_IAU2000_0UTC:
-      checkout_eop_file_async(&c04, 0);
+      status = checkout_eop_file_async(&c04, 0);
       break;
     case EOP_C01_IAU2000:
-      checkout_eop_file_async(&c01, 0);
+      status = checkout_eop_file_async(&c01, 0);
       break;
   }
 
   unlock_eop();
 
+  prop_error(fn, status, 0);
   return 0;
 #endif // WITH_CURL
 }
