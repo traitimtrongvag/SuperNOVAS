@@ -454,17 +454,22 @@ int novas_Rz(double angle, double *v) {
  * @param decimals    Number of decimal places to show
  * @param[out] str    output string, with at least `len` bytes of space allocated.
  * @param len         maximum number of bytes to print into output buffer, including termination.
- * @return            the number of characters printed into the output string, or -1 if there was
- *                    an error (errno will indicate the type of error).
+ * @return            the number of characters printed into the output string, excluding the
+ *                    termination, or -1 if there was an error (errno will indicate the type of
+ *                    error).
  *
  * @since 1.6
  * @author Attila Kovacs
  */
 int novas_print_decimal(double value, int decimals, char *str, int len) {
-  static const char *fn = "novas_decimal_string";
+  static const char *fn = "novas_print_decimal";
 
-  char fmt[20] = {'\0'}, s[40] = {'\0'};
+  char fmt[20] = {'\0'};
+
+#ifdef NOVAS_SNPRINTF
+  char s[40] = {'\0'};
   int n;
+#endif
 
   if(!str)
     return novas_error(-1, EINVAL, fn, "output string is NULL");
@@ -477,17 +482,26 @@ int novas_print_decimal(double value, int decimals, char *str, int len) {
   else if(decimals > 15)
     decimals = 15;
 
-  snprintf(fmt, sizeof(fmt), "%%.%dg", decimals + 1);
-  n = snprintf(s, sizeof(s), fmt, value);
+  novas_snprintf(fmt, sizeof(fmt), "%%.%dg", decimals + 1);
 
-  if(n >= len) {
-    n = len;
-    s[n-1] = '\0';
-  }
+#ifdef NOVAS_SNPRINTF
+  // We are using our dummy snprintf(), without length checking, so make sure
+  // otherwise that we don't write more then len bytes into the output buffer.
 
-  strncpy(str, s, len);
+  // We first print into a large enough local buffer...
+  n = novas_snprintf(s, sizeof(s), fmt, value);
+
+  // Use at most len-1 bytes from local buffer
+  if(n >= len)
+    n = len - 1; // count excluding termination
+
+  memcpy(str, s, n); // Copy string from local buffer into output
+  str[n] = '\0';     // Terminate the output buffer
 
   return n;
+#else
+  return novas_snprintf(str, len, fmt, value);
+#endif
 }
 
 /// \endcond PROTECTED
@@ -1047,7 +1061,7 @@ int novas_print_dms(double degrees, enum novas_separator_type sep, int decimals,
  *                        the [-90:90] range.
  *
  * @since 1.7
- * @sa Attila Kovacs
+ * @author Attila Kovacs
  *
  * @sa novas_equ_offset_by(), novas_sep()
  * @sa https://docs.astropy.org/en/stable/_modules/astropy/coordinates/angles/utils.html#offset_at

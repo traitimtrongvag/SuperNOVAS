@@ -399,7 +399,7 @@ static int novas_fetch_eop_chunk(CURL **restrict pCurl, const char *restrict url
     initialized = 1;
   }
 
-  snprintf(range, sizeof(range), "%ld-%ld", offset, (offset + len - 1));
+  novas_snprintf(range, sizeof(range), "%ld-%ld", offset, (offset + len - 1));
 
   curl_easy_setopt(curl, CURLOPT_URL, url);
   if(timeout_millis > 0L)

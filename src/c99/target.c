@@ -122,7 +122,7 @@ int novas_init_cat_entry(cat_entry *restrict source, const char *restrict name, 
 
   strncpy(source->starname, name, SIZE_OF_OBJ_NAME - 1);
   if(strlen(name) >= SIZE_OF_OBJ_NAME)
-     return novas_error(1, ERANGE, fn, "input 'name' is too long (%d > %d)", (int) strlen(name), SIZE_OF_OBJ_NAME - 1);
+     return novas_error(1, ERANGE, fn, "input 'name' is too long (%zu > %d)", strlen(name), SIZE_OF_OBJ_NAME - 1);
 
   return 0;
 }
@@ -160,7 +160,7 @@ int novas_set_catalog(cat_entry *restrict source, const char *restrict catalog, 
   source->catalog[SIZE_OF_CAT_NAME - 1] = '\0';
 
   if(strlen(catalog) >= SIZE_OF_CAT_NAME)
-    return novas_error(2, ERANGE, fn, "Input catalog ID is too long (%d > %d)", (int) strlen(catalog), SIZE_OF_CAT_NAME - 1);
+    return novas_error(2, ERANGE, fn, "Input catalog ID is too long (%zu > %d)", strlen(catalog), SIZE_OF_CAT_NAME - 1);
 
   return 0;
 }
@@ -910,7 +910,7 @@ short transform_cat(enum novas_transform_type option, double jd_tt_in, const cat
     return novas_error(-1, EINVAL, fn, "NULL parameter: in=%p, out=%p", in, out);
 
   if(out_id && strlen(out_id) >= SIZE_OF_CAT_NAME)
-    return novas_error(2, EINVAL, fn, "output catalog ID is too long (%d > %d)", (int) strlen(out_id), SIZE_OF_CAT_NAME - 1);
+    return novas_error(2, EINVAL, fn, "output catalog ID is too long (%zu > %d)", strlen(out_id), SIZE_OF_CAT_NAME - 1);
 
   if(option == CHANGE_J2000_TO_ICRS || option == CHANGE_ICRS_TO_J2000) {
     // ICRS frame ties always assume J2000 for both input and output...
