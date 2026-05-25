@@ -7,9 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [1.7.0-rc2] - 2026-05-25
 
-Release candidate for the upcoming feature release, possibly around 1 August 2026.
+Release candidate for the upcoming feature release, possibly around 1 August 2026 -- or before.
 
 ### Fixed
 
@@ -110,8 +110,6 @@ Release candidate for the upcoming feature release, possibly around 1 August 202
  
  - `examples/Makefile` to work standalone, without `config.mk`.
  
-
-
 ### Deprecated
 
  - #323: A few functions, which have already been documented as deprecated, are now annotated as such also so the
