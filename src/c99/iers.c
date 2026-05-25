@@ -638,6 +638,9 @@ static void cleanup_eop_urls_async() {
  *  - If __SuperNOVAS__ was built without `libc` support (`WITHOUT_LIBC` build configuration option),
  *    then this function will always return an error (`errno` set to `ENOSYS`).
  *
+ *  - This call is not thread-safe. You should avoid calling it from concurrent threads if you
+ *    want it to have predictable behavior.
+ *
  * @param filename      Path to a local `leap-seconds.list` file (as obtained from IERS or a
  *                      mirror). It is typically included in the `tzdata` package on Linux, where
  *                      it may be found as `/usr/share/zoneinfo/leap-seconds.list` typically. Or,
@@ -780,7 +783,10 @@ int novas_lookup_leap(time_t t) {
  *
  *  - Requires __SuperNOVAS__ to be compiled with cURL support enabled, otherwise -1 is returned
  *    with `errno` set to `ENOSYS`.
-
+ *
+ *  - This call is not thread-safe. You should avoid calling it from concurrent threads if you
+ *    want it to have predictable behavior.
+ *
  * @param series      The EOP series identifier constant.
  * @param itrf_year   [yr] ITRF realization year. Needed only for precision at the few &mu;as
  *                    level, otherwise, you can set it to something recent, like 2020. It is
@@ -948,6 +954,9 @@ int novas_get_eop_itrf_year(enum novas_eop_series series) {
  *  - This call does not affect or destroy any thread-local data currently cached. As such,
  *    `novas_fetch_eop()` may continue to return EOP using the previously cached values, if the
  *    requested date falls within the same data bracket as the last call.
+ *
+ *  - This call is not thread-safe. You should avoid calling it from concurrent threads if you
+ *    want it to have predictable behavior.
  *
  * @since 1.7
  * @author Attila Kovacs
@@ -1131,6 +1140,9 @@ int novas_fetch_eop_unix(time_t t, long timeout_millis, novas_eop *eop) {
  *  - If __SuperNOVAS__ was built without cURL support (`WITHOUT_CURL` or `WITHOUT_LIBC` build
  *    configuration options), then this function will return an error (`errno` set to `ENOSYS`) if
  *    trying to enable EOP fetching.
+
+ *  - This call is not thread-safe. You should avoid calling it from concurrent threads if you
+ *    want it to have predictable behavior.
  *
  * @param enabled     TRUE (non-zero) to enabled automatic fetching of EOP values from IERS,
  *                    or else FALSE (0) to disable. By default EOP fetching is enabled.

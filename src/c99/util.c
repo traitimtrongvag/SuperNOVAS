@@ -48,6 +48,11 @@ static novas_error_handler error_handler_fn = DEFAULT_ERROR_HANDLER;
  * When built with `WITHOUT_LIBC` there is no default stderr handler, so passing NULL silences
  * output entirely (same effect as `novas_debug(NOVAS_DEBUG_OFF)`).
  *
+ * NOTES:
+ *
+ *  - This call is not thread-safe. You should avoid calling it from concurrent threads if you
+ *    want it to have predictable behavior.
+ *
  * @param handler  new handler, or NULL to restore the default error messaging to `stderr`
  *                 (or to silence output when built with `WITHOUT_LIBC`).
  * @return         the previous handler (so it can be restored or chained)
@@ -366,6 +371,11 @@ void novas_tiny_rotate(const double *in, double ax, double ay, double az, double
 /**
  * Sets the maximum number of iterations allowed for convergent inverse calculations.
  *
+ * NOTES:
+ *
+ *  - This call is not thread-safe. You should avoid calling it from concurrent threads if you
+ *    want it to have predictable behavior.
+ *
  * @param n   Maximum number of iterations allowed.
  *
  * @since 1.5
@@ -509,6 +519,11 @@ int novas_print_decimal(double value, int decimals, char *str, int len) {
  *
  * @param mode    NOVAS_DEBUG_OFF (0; or &lt;0), NOVAS_DEBUG_ON (1), or NOVAS_DEBUG_EXTRA (2; or
  *                &gt;2).
+ *
+ * NOTES:
+ *
+ *  - This call is not thread-safe. You should avoid calling it from concurrent threads if you
+ *    want it to have predictable behavior.
  *
  * @since 1.0
  * @author Attila Kovacs
