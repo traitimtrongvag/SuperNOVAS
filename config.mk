@@ -111,8 +111,6 @@ SO_VERSION := 1
 
 # If building without LIBC, force disable the incompatible options.
 ifeq ($(WITHOUT_LIBC), 1)
-  $(info Configured WITHOUT_LIBC: Force disable incompatible config options.)
-
   override WITHOUT_CURL := 1
   override CALCEPH_SUPPORT := 0
   override CSPICE_SUPPORT := 0

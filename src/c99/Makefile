@@ -46,11 +46,11 @@ endif
 
 # Shared libraries (versioned and unversioned)
 .PHONY: shared
-shared: $(SHARED_TARGETS)
+shared: warn $(SHARED_TARGETS)
 
 # Static libraries
 .PHONY: static
-static: $(LIB)/libnovas.a solsys
+static: warn $(LIB)/libnovas.a solsys
 
 # solarsystem() call handler objects
 .PHONY: solsys
@@ -58,7 +58,14 @@ solsys: $(SOLSYS_TARGETS)
 
 # All of the above
 .PHONY: all
-all: distro static analyze
+all: static analyze
+
+# Warn about limiting build options.
+.phony: warn
+warn:
+ifeq ($(WITHOUT_LIBC),1)
+	$(info INFO: Configured WITHOUT_LIBC: Force disable incompatible config options.)
+endif
 
 # Remove intermediates
 .PHONY: clean
