@@ -88,7 +88,7 @@
 #define SUPERNOVAS_PATCHLEVEL     0
 
 /// Additional release information in version, e.g. "-1", or "-rc1", or empty string "" for releases.
-#define SUPERNOVAS_RELEASE_STRING "-rc3"
+#define SUPERNOVAS_RELEASE_STRING "-devel"
 
 /// \cond PRIVATE
 
@@ -574,7 +574,7 @@ enum novas_debug_mode {
 
 
 /**
- * The type of astronomical objects distinguied by the NOVAS library.
+ * The type of astronomical objects distinguished by the NOVAS library.
  *
  * @sa object, NOVAS_OBJECT_TYPES
  * @c_source
@@ -836,7 +836,7 @@ enum novas_observer_place {
   NOVAS_OBSERVER_ON_EARTH,
 
   /// Observer is on Earth orbit, with a position and velocity vector relative to geocenter.
-  /// This may also be appropriate for observatories at the L2 or other Earth-based Langrange
+  /// This may also be appropriate for observatories at the L2 or other Earth-based Lagrange
   /// points.
   /// @sa make_observer_in_space()
   NOVAS_OBSERVER_IN_EARTH_ORBIT,
@@ -1098,12 +1098,12 @@ enum novas_equinox_type {
  * @c_solar-system
  */
 enum novas_origin {
-  NOVAS_BARYCENTER = 0,           ///< Origin at the Solar-system baricenter (i.e. BCRS)
+  NOVAS_BARYCENTER = 0,           ///< Origin at the Solar-system barycenter (i.e. BCRS)
   NOVAS_HELIOCENTER               ///< Origin at the center of the Sun.
 };
 
 /**
- * The number of different ICSR origins available in NOVAS.
+ * The number of different origins for Solar-system ephemeris data available in NOVAS.
  *
  * @hideinitializer
  * @sa enum novas_origin
@@ -1112,7 +1112,7 @@ enum novas_origin {
 
 
 /**
- * The types of coordinate transformations available for tranform_cat().
+ * The types of coordinate transformations available for transform_cat().
  *
  * @sa transform_cat(), make_cat_object_sys(), make_redshifted_object_sys(), NOVAS_TRANSFORM_TYPES
  * @c_source
@@ -1793,14 +1793,14 @@ enum novas_timescale {
   NOVAS_TDB,        ///< Barycentric Dynamical Time (TDB)
   NOVAS_TCG,        ///< Geocentric Coordinate Time (TCG)
   NOVAS_TT,         ///< Terrestrial Time (TT)
-  NOVAS_TAI,        ///< Innternational Atomic Time (TAI)
+  NOVAS_TAI,        ///< International Atomic Time (TAI)
   NOVAS_GPS,        ///< GPS Time
   NOVAS_UTC,        ///< Universal Coordinated Time (UTC)
   NOVAS_UT1,        ///< UT1 earth rotation time, based on the measured Earth orientation parameters published in IERS Bulletin A.
 };
 
 /**
- * The number of asronomical time scales supported.
+ * The number of astronomical time scales supported.
  *
  * @hideinitializer
  * @since 1.1
@@ -1810,7 +1810,7 @@ enum novas_timescale {
 #define NOVAS_TIMESCALES    (NOVAS_UT1 + 1)
 
 /**
- * A structure, which defines a precise instant of time that can be extpressed in any of the
+ * A structure, which defines a precise instant of time that can be expressed in any of the
  * astronomical timescales. Precisions to picosecond accuracy are supported, which ought to be
  * plenty accurate for any real astronomical application.
  *
@@ -1859,7 +1859,7 @@ typedef struct novas_matrix {
 #define NOVAS_MATRIX_INIT {{{0.0}}}
 
 /**
- * novas_matrix initializer for an indentity matrix
+ * novas_matrix initializer for an identity matrix.
  *
  * @hideinitializer
  * @since 1.3
@@ -1875,7 +1875,7 @@ typedef struct novas_matrix {
  * @sa enum novas_planet, NOVAS_PLANET_BUNDLE_INIT, grav_planets()
  */
 typedef struct novas_planet_bundle {
-  int mask;                      ///< Bitwise mask (1 << planet-number) specifying wich planets have pos/vel data
+  int mask;                      ///< Bitwise mask (1 << planet-number) specifying which planets have pos/vel data
   double pos[NOVAS_PLANETS][3];  ///< [AU] %Apparent positions of planets w.r.t. observer antedated for light-time
   double vel[NOVAS_PLANETS][3];  ///< [AU/day] %Apparent velocity of planets w.r.t. barycenter antedated for light-time
 } novas_planet_bundle;

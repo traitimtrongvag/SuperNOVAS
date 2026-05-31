@@ -130,7 +130,7 @@ INSTALL_PROGRAM ?= install
 INSTALL_DATA ?= install -m 644
 
 .PHONY: install
-install: install-libs install-headers install-docs install-legacy
+install: install-libs install-headers install-docs
 
 .PHONY: install-libs
 install-libs:
@@ -260,12 +260,12 @@ help:
 	@echo
 	@echo "The following targets are available:"
 	@echo
-	@echo "  distro        (default) 'shared' targets and also 'local-dox' provided 'doxygen'" 
-	@echo "                is available, or was specified via the DOXYGEN variable (e.g. in"
-	@echo "                'config.mk')"
-	@echo "  static        Builds the static 'lib/libsupernovas[++].a' libraries."
-	@echo "  shared        Builds the shared 'libsupernovas[++].so', 'libsolsys1.so', and" 
-	@echo "                'libsolsys2.so' libraries (linked to versioned ones)."
+	@echo "  distro        (default) 'shared' targets and also 'local-dox' provided" 
+	@echo "                'doxygen' is available, or was specified via the DOXYGEN"
+	@echo "                variable (e.g. in 'config.mk')"
+	@echo "  static        Builds static libraries, e.g. 'lib/libsupernovas[++].a'."
+	@echo "  shared        Builds shared libraries , e.g. 'libsupernovas[++].so'"
+	@echo "                (linked to versioned ones)."
 	@echo "  dox           Compiles HTML API documentation using 'doxygen'."
 	@echo "  test          Runs regression tests."
 	@echo "  benchmark     Runs benchmarks."
