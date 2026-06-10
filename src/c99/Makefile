@@ -239,7 +239,7 @@ help:
 	@echo "  distro        (default) 'shared' targets and also 'local-dox' provided 'doxygen'" 
 	@echo "                is available, or was specified via the DOXYGEN variable (e.g. in"
 	@echo "                'config.mk')"
-	@echo "  static        Builds the static libraries(e.g. 'libsupernovas.a')"
+	@echo "  static        Builds the static libraries (e.g. 'libsupernovas.a')"
 	@echo "  shared        Builds the shared libraries (e.g. 'libsupernovas.so')"
 	@echo "  solsys        Builds only the objects that may provide external 'solarsystem()'"
 	@echo "                call implementations (e.g. 'solsys1.o', 'eph_manager.o'...)."
@@ -249,7 +249,7 @@ help:
 	@echo "  distclean     Deletes all generated files."
 	@echo
 
-# This Makefile depends on the config and build snipplets.
+# This Makefile depends on the config and build snippets.
 Makefile: ../../config.mk ../../build.mk
 
 # ===============================================================================
