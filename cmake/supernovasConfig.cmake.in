@@ -29,7 +29,7 @@ endif()
 
 if(TARGET supernovas::solsys-cspice)
     find_library(CSPICE_LIB cspice)
-    if(CALCEPH_LIB)
+    if(CSPICE_LIB)
         find_dependency(Threads)
         set(supernovas_solsys-cspice_FOUND TRUE)
     else()
