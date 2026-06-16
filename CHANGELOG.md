@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Fixed
+
+ - Fixed Windows builds with MSC, which were broken due to the lack of `fmemopen()` in the Windows world. We now use a 
+   temporary file `C:\Temp\supernovas.tmp` to hold the leap seconds list for processing.
+
+
 ## [1.7.0] - 2026-06-16
 
 Feature release, providing the ability to fetch Earth Orientation Parameters (EOP) from IERS, both explicitly or 

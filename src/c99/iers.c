@@ -16,11 +16,11 @@
  *  @sa \ref earth
  */
 
-/// \cond PRIVATE
 #if !defined(_MSC_VER) && !defined(WITHOUT_LIBC)
-#  define _GNU_SOURCE                 ///< fmemopen() (before glibc 2.10)
+/// \cond PRIVATE
+#  define _GNU_SOURCE         ///< fmemopen() (before glibc 2.10)
+ /// \endcond
 #endif
-/// \endcond
 
 #include <errno.h>
 #include <string.h>
@@ -60,10 +60,11 @@
 /// \cond PRIVATE
 #  define LEAP_FILENAME               "leap-seconds.list"
 #  define DEFAULT_LEAP_URL            "https://" IERS_LEAP_SERVER "/iers/bul/bulc/ntp/" LEAP_FILENAME
-#  define NTP_UNIX_EPOCH              2208988800LL  ///< [s] NTP timestamp of UNIX epoch (1970 Jan 1)
+#  define NTP_UNIX_EPOCH              2208988800LL      ///< [s] NTP timestamp of UNIX epoch (1970 Jan 1)
 
 #ifdef _MSC_VER
-#  define gmtime_r        gmtime_s    ///< MSC equivalent
+#  define TMP_FILE        "C:\\Temp\\supernovas.tmp"    ///< Temporary file to use for leap-seconds.list
+#  define gmtime_r        gmtime_s                      ///< MSC equivalent
 #endif
 
 /**
@@ -185,6 +186,38 @@ static int eop_mutex_initialized;  ///< Whether EOP mutex was initialized
 
 // ===========================================================================
 #ifndef WITHOUT_LIBC
+
+#ifdef _MSC_VER
+/// \cond PRIVATE
+
+// Windows does not have fmemopen(), so we write a proxy version of it, which uses a
+// temporary file (TMP_FILE). After closing the file, the caller should also unlink
+// TMP_FILE.
+FILE *fmemopen(void *buf, size_t size, const char *mode) {
+  static const char *fn = "fmemopen";
+
+  FILE *fp = fopen(TMP_FILE, "rw");
+  (void) mode; // unused
+
+  if(!fp) {
+    novas_set_errno(-1, errno, fn, "Could not create temporary file.");
+    return NULL;
+  }
+
+  if(fwrite(buf, size, 1, fp) <= 0) {
+    novas_set_errno(-1, errno, fn, "Could not write to temporary file.");
+    return NULL;
+  }
+
+  if(fseek(fp, 0, SEEK_SET) < 0) {
+    novas_set_errno(-1, errno, fn, "Could not rewind temporary file.");
+    return NULL;
+  }
+
+  return fp;
+}
+/// \endcond
+#endif
 
 static void lock_leap() {
   if(!leap_mutex_initialized) {
@@ -362,6 +395,11 @@ static iers_leap_entry *fetch_leaps_async(long long *expiration) {
   fp = fmemopen(str, data.size, "r");
   list = parse_leap_file(fp, expiration);
   fclose(fp);
+
+#ifdef _MSC_VER
+  // delete the temporary file
+  unlink(TMP_FILE);
+#endif
 
   if(!list)
     novas_trace_invalid(fn);
