@@ -322,7 +322,7 @@ int novas_set_distance(cat_entry *source, double parsecs) {
  * @param pm_ra       [mas/yr] Proper motion in right ascension.
  * @param pm_dec      [mas/yr] Proper motion in declination.
  * @param parallax    [mas] Parallax.
- * @param rad_vel     [km/s] Radial velocity relative to the Solar-System Barycenter (SSB). To
+ * @param rv          [km/s] Radial velocity relative to the Solar-System Barycenter (SSB). To
  *                    convert velocities defined against the Local Standard of Rest (LSR), you may
  *                    use `novas_lsr_to_ssb_vel()` to convert appropriately. Or, to convert from
  *                    a redshift value, you might use `novas_z2v()`.
@@ -334,14 +334,14 @@ int novas_set_distance(cat_entry *source, double parsecs) {
  * @sa novas_lsr_to_ssb_vel(), transform_cat()
  */
 short make_cat_entry(const char *restrict name, const char *restrict catalog, long cat_num, double ra, double dec, double pm_ra, double pm_dec,
-        double parallax, double rad_vel, cat_entry *source) {
+        double parallax, double rv, cat_entry *source) {
   static const char *fn = "make_cat_entry";
 
   prop_error(fn, novas_init_cat_entry(source, name, ra, dec), 0);
   prop_error(fn, novas_set_catalog(source, catalog, cat_num), 0);
   novas_set_proper_motion(source, pm_ra, pm_dec);
   novas_set_parallax(source, parallax);
-  prop_error(fn, novas_set_ssb_vel(source, rad_vel), 0);
+  prop_error(fn, novas_set_ssb_vel(source, rv), 0);
 
   return 0;
 }

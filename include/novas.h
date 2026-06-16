@@ -2668,7 +2668,7 @@ int cal_date(double tjd, short *restrict year, short *restrict month, short *res
 // in target.c
 /// @c_source
 short make_cat_entry(const char *restrict name, const char *restrict catalog, long cat_num, double ra, double dec,
-        double pm_ra, double pm_dec, double parallax, double rad_vel, cat_entry *source);
+        double pm_ra, double pm_dec, double parallax, double rv, cat_entry *source);
 
 /// @c_source
 short transform_cat(enum novas_transform_type, double jd_tt_in, const cat_entry *in, double jd_tt_out, const char *out_id,
