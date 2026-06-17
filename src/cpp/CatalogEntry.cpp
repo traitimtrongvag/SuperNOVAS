@@ -404,6 +404,7 @@ CatalogSource CatalogEntry::to_source() const {
  * @sa parallax(), distance(), radial_velocity(), v_lsr(), redshift(), catalog()
  * @sa system()
  */
+// cppcheck-suppress shadowFunction
 CatalogEntry& CatalogEntry::proper_motion(double ra, double dec) {
   static const char *fn = "CatalogEntry::proper_motion()";
 

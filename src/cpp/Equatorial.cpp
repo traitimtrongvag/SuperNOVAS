@@ -175,6 +175,7 @@ bool Equatorial::operator!=(const Equatorial& other) const {
  * @since 1.6
  * @sa to_system()
  */
+// cppcheck-suppress shadowFunction
 Equatorial Equatorial::operator>>(const Equinox& system) const {
   Equatorial e = to_system(system);
   if(!e.is_valid())
@@ -275,6 +276,7 @@ Equatorial Equatorial::offset(const Angle& direction, const Angle& distance) con
  * @sa operator>>(), to_icrs(), to_j2000(), to_hip(), to_mod(), to_mod_at_besselian_epoch(),
  *     to_tod(), to_cirs()
  */
+// cppcheck-suppress shadowFunction
 Equatorial Equatorial::to_system(const Equinox& system, enum novas_accuracy accuracy) const {
   static const char *fn = "Equatorial::to_system()";
 

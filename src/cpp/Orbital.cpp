@@ -219,6 +219,7 @@ OrbitalSystem& OrbitalSystem::orientation(double obliquity_rad, double ascending
  * @since 1.6
  * @sa pole(), obliquity(), ascending_node()
  */
+// cppcheck-suppress shadowFunction
 OrbitalSystem& OrbitalSystem::orientation(const Angle& obliquity, const Angle& ascending_node, const Equinox& system) {
   return orientation(obliquity.rad(), ascending_node.rad(), system);
 }
@@ -1046,6 +1047,7 @@ Orbital& Orbital::apsis_period(double seconds) {
  * @since 1.6
  * @sa apsis_rate(), periapsis(), eccentricity()
  */
+// cppcheck-suppress shadowFunction
 Orbital& Orbital::apsis_period(const Interval& period) {
   return apsis_period(period.seconds());
 }
@@ -1108,6 +1110,7 @@ Orbital& Orbital::node_period(double seconds) {
  * @since 1.6
  * @sa node_rate(), ascending_node(), inclination(), pole()
  */
+// cppcheck-suppress shadowFunction
 Orbital& Orbital::node_period(const Interval& period) {
   return node_period(period.seconds());
 }

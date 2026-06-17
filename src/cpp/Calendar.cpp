@@ -626,6 +626,7 @@ time_t CalendarDate::unix_time() const {
  * @since 1.6
  * @sa operator>>(Calendar&)
  */
+// cppcheck-suppress shadowFunction
 CalendarDate CalendarDate::to_calendar(const Calendar& calendar) const {
   CalendarDate d = calendar.date(_jd);
   if(!d.is_valid())
@@ -642,6 +643,7 @@ CalendarDate CalendarDate::to_calendar(const Calendar& calendar) const {
  * @since 1.6
  * @sa to_calendar(Calendar&)
  */
+// cppcheck-suppress shadowFunction
 CalendarDate CalendarDate::operator>>(const Calendar& calendar) const {
   CalendarDate d = to_calendar(calendar);
   if(!d.is_valid())

@@ -178,6 +178,7 @@ bool Ecliptic::operator!=(const Ecliptic& other) const {
  * @since 1.6
  * @sa to_system()
  */
+// cppcheck-suppress shadowFunction
 Ecliptic Ecliptic::operator>>(const Equinox& system) const {
   Ecliptic e = to_system(system);
   if(!e.is_valid())
@@ -312,6 +313,7 @@ Ecliptic Ecliptic::offset(const Angle& direction, const Angle& distance) const {
  * @since 1.6
  * @sa operator>>(), to_icrs(), to_j2000(), to_mod(), to_tod()
  */
+// cppcheck-suppress shadowFunction
 Ecliptic Ecliptic::to_system(const Equinox& system, enum novas_accuracy accuracy) const {
   if(system == this->system())
     return *this;
