@@ -115,7 +115,7 @@ if(NOT WITHOUT_CURL)
    set(LIBCURL CURL::libcurl)
    
    # [.pc] Link applications against curl lib...
-   string(APPEND PC_LIBS_PRIVATE -l${LIBCURL} " ")
+   string(APPEND PC_LIBS_PRIVATE -lcurl " ")
 endif()
 
 if(ENABLE_CALCEPH OR ENABLE_CSPICE)
