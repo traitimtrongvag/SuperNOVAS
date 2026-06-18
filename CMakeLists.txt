@@ -111,7 +111,8 @@ if(HAS_MATHLIB)
 endif()
 
 if(NOT WITHOUT_CURL)
-   find_package(CURL)
+   find_package(CURL REQUIRED)
+   
    set(LIBCURL CURL::libcurl)
    
    # [.pc] Link applications against curl lib...

@@ -15,6 +15,9 @@ Upcoming bug-fix release, possibly around 1 August 2026.
 
  - #345: Fixed possible buffer overflows when using `snprintf()` (by officialconfuzius).
  
+ - #347: pkgconfig to call `find_dependency(CURL)` when __SuperNOVAS__ is built with `WITHOUT_CURL=FALSE` (by
+   BillyONeal).
+ 
 
 ## [1.7.1] - 2026-06-17
 
