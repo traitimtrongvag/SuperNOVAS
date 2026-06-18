@@ -429,7 +429,7 @@
 /// @c_observer
 #define NOVAS_GRS80_RADIUS        6378137.0
 
-/// [m] WGS84 Earth flattening
+/// [m] GRS80 Earth flattening
 /// @since 1.5
 /// @sa novas_geodetic_to_cartesian(), novas_cartesian_to_geodetic()
 /// @c_observer

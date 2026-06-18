@@ -443,7 +443,7 @@ double get_ut1_to_tt(int leap_seconds, double dut1) {
  *
  *  - If __SuperNOVAS__ was built without cURL support (`WITHOUT_CURL` or `WITHOUT_LIBC` build
  *    configuration options), then automatic fetching of the leap seconds and the UT1 - UTC
- *    differennce is not possible. You must set `leap` and `dut1` appropriately explicitly.
+ *    difference is not possible. You must set `leap` and `dut1` appropriately explicitly.
  *
  * @param timescale     The astronomical time scale in which the Julian Date is given
  * @param jd            [day] Julian day value in the specified timescale
@@ -484,7 +484,7 @@ int novas_set_time(enum novas_timescale timescale, double jd, int leap, double d
  *
  *  - If __SuperNOVAS__ was built without cURL support (`WITHOUT_CURL` or `WITHOUT_LIBC` build
  *    configuration options), then automatic fetching of the leap seconds and the UT1 - UTC
- *    differennce is not possible. You must set `leap` and `dut1` appropriately explicitly.
+ *    difference is not possible. You must set `leap` and `dut1` appropriately explicitly.
  *
  * @param timescale     The astronomical time scale in which the Julian Date is given
  * @param str           The astronomical date specification, possibly including time and timezone,
@@ -565,7 +565,7 @@ static double tt_offset(const novas_timespec *ts, enum novas_timescale timescale
  *
  *  - If __SuperNOVAS__ was built without cURL support (`WITHOUT_CURL` or `WITHOUT_LIBC` build
  *    configuration options), then automatic fetching of the leap seconds and the UT1 - UTC
- *    differennce is not possible. You must set `leap` and `dut1` appropriately explicitly.
+ *    difference is not possible. You must set `leap` and `dut1` appropriately explicitly.
  *
  * REFERENCES:
  *
@@ -604,7 +604,7 @@ static double tt_offset(const novas_timespec *ts, enum novas_timescale timescale
  */
 int novas_set_split_time(enum novas_timescale timescale, long ijd, double fjd, int leap, double dut1,
         novas_timespec *restrict time) {
-  static const char *fn = "novas_set_time";
+  static const char *fn = "novas_set_split_time";
 
   long ifjd;
   double dt = 0.0;
@@ -936,7 +936,7 @@ double novas_diff_tcg(const novas_timespec *t1, const novas_timespec *t2) {
  *
  *  - If __SuperNOVAS__ was built without cURL support (`WITHOUT_CURL` or `WITHOUT_LIBC` build
  *    configuration options), then automatic fetching of the leap seconds and the UT1 - UTC
- *    differennce is not possible. You must set `leap` and `dut1` appropriately explicitly.
+ *    difference is not possible. You must set `leap` and `dut1` appropriately explicitly.
  *
  * @param unix_time   [s] UNIX time (UTC) seconds
  * @param nanos       [ns] UTC sub-second component
@@ -996,7 +996,7 @@ int novas_set_unix_time(time_t unix_time, long nanos, int leap, double dut1, nov
  *
  *  3. If __SuperNOVAS__ was built without cURL support (`WITHOUT_CURL` or `WITHOUT_LIBC` build
  *     configuration options), then automatic fetching of the leap seconds and the UT1 - UTC
- *     differennce is not possible. You must set `leap` and `dut1` appropriately explicitly.
+ *     difference is not possible. You must set `leap` and `dut1` appropriately explicitly.
  *
  * @param leap        [s] Leap seconds, e.g. as published by IERS Bulletin C. (It may be
  *                    unused if `dut1` is NAN -- see below).
