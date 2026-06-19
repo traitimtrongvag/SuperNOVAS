@@ -864,7 +864,7 @@ double novas_diff_time_scale(const novas_timespec *t1, const novas_timespec *t2,
     return NAN;
   }
 
-  if((int) timescale < 0 || (int) timescale >= NOVAS_TIMESCALES) {
+  if((unsigned) timescale >= NOVAS_TIMESCALES) {
     novas_set_errno(EINVAL, "novas_diff_time_scale", "invalid timescale: %d", (int) timescale);
     return NAN;
   }
@@ -1283,7 +1283,7 @@ int novas_iso_timestamp(const novas_timespec *restrict time, char *restrict dst,
  * @sa novas_iso_timestamp(), novas_parse_date()
  */
 int novas_timestamp(const novas_timespec *restrict time, enum novas_timescale scale, char *restrict dst, int maxlen) {
-  static const char *fn = "novas_timestamp_scale";
+  static const char *fn = "novas_timestamp";
 
   char buf[40];
   long ijd;
