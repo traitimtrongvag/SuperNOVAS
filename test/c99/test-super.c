@@ -5947,6 +5947,16 @@ static int test_lookup_leap() {
     if(!is_equal("lookup_leap:offline:j2000", novas_lookup_leap(946684800L), 32.0, 1e-15)) n++;
   }
 
+  rc = get_resource("bad-expiration-ok1.list", path, sizeof(path));
+  if(!rc) fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", path);
+  else if(!is_ok("lookup_leap:set_leap_list:bad-first-expiration", novas_set_leap_list(path))) return ++n;
+
+  rc = get_resource("bad-expiration-ok2.list", path, sizeof(path));
+  if(!rc) fprintf(stderr, "WARNING! Missing %s: skip tests requiring it", path);
+  else if(!is_ok("lookup_leap:set_leap_list:bad-second-expiration", novas_set_leap_list(path))) return ++n;
+
+  novas_set_leap_list(NULL);
+
   return n;
 }
 

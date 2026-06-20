@@ -232,26 +232,18 @@ static iers_leap_entry *parse_leaps(char *buf, long long *expiration) {
 
   iers_leap_entry *list = NULL;
   char *ptr = buf, *line, *context = NULL;
+  int got_expiration = 0;
 
   // Parse leap-seconds.list data
-  while((line = strtok_r(ptr, "\r\n", &context)) != NULL) if(line[0]) {
+  while((line = strtok_r(ptr, "\r\n", &context)) != NULL) {
     ptr = NULL; // Keep parsing from the same input
 
-    // Process expiration timestamp
-    if(line[0] == '#') {
-      if(line[1] == '@') {
-        if(sscanf(&line[2], "%lld", expiration) < 1) {
-          destroy_leap_list(list);
-          novas_set_errno(errno, fn, "could not parse leap-seconds.list expiration time.");
-          return NULL;
-        }
-        *expiration -= NTP_UNIX_EPOCH;
-      }
-    }
-    else {
+    if(!line[0]) continue; // Skip empty lines
+
+    if(line[0] != '#') { // Not a comment line, we expect a leap list entry...
       // Add leap entry to list
       iers_leap_entry *e = (iers_leap_entry *) calloc(1, sizeof(iers_leap_entry));
-      long long start = 0LL;
+      long long ntp_start = 0LL;
 
       // -- It's hard to produce a malloc fail in a test environment, so we'll skip coverage tracking on it.
       // LCOV_EXCL_START
@@ -263,7 +255,7 @@ static iers_leap_entry *parse_leaps(char *buf, long long *expiration) {
       // LCOV_EXCL_STOP
 
       // Parse start time and leap seconds value
-      if(sscanf(line, "%lld %d", &start, &e->leap) < 2) {
+      if(sscanf(line, "%lld %d", &ntp_start, &e->leap) < 2) {
         free(e);
         destroy_leap_list(list);
         novas_set_errno(errno, fn, "invalid leap-seconds.list entry: %s", line);
@@ -271,13 +263,26 @@ static iers_leap_entry *parse_leaps(char *buf, long long *expiration) {
       }
 
       // Prepend to head of list.
-      e->unix_start = (time_t) (start - NTP_UNIX_EPOCH);
+      e->unix_start = (time_t) (ntp_start - NTP_UNIX_EPOCH);
       e->unix_end = (time_t) *expiration;
       e->next = list;
       if(e->next)
         e->next->unix_end = e->unix_start;
       list = e;
     }
+    else if(line[1] == '@') { // Process expiration timestamp
+      // We'll use the first valid expiration timestamp (there should be only one, but...).
+      if(!got_expiration && sscanf(&line[2], "%lld", expiration) == 1) {
+        *expiration -= NTP_UNIX_EPOCH;
+        got_expiration = 1;
+      }
+    }
+  } // while loop over lines.
+
+  if(!got_expiration) {
+    destroy_leap_list(list);
+    novas_set_errno(errno, fn, "could not parse leap-seconds.list expiration time.");
+    return NULL;
   }
 
   return list;
