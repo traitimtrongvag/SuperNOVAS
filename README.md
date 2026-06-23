@@ -41,7 +41,9 @@ will scale further with the number of CPUs when calculations are performed in pa
 __SuperNOVAS__ is available through the [Sigmyne/SuperNOVAS](https://github.com/Sigmyne/SuperNOVAS) repository on 
 GitHub, without licensing restrictions. Its source code is compatible with the C99 and C++11 standards, and hence 
 should be suitable for old and new platforms alike. And, despite it being a light-weight library, it fully supports 
-the IAU 2000/2006 conventions for microarcsecond-level position calculations. 
+the [IAU 2000/2006 resolutions](https://www.iau.org/IAU/Iau/Publications/List-of-Resolutions.aspx) and the 
+[IERS 2010 conventions](https://www.iers.org/IERS/EN/DataProducts/Conventions/conventions) for microarcsecond-level 
+position calculations. 
 
 This document has been updated for the `v1.7` and later releases.
 
@@ -67,7 +69,7 @@ This document has been updated for the `v1.7` and later releases.
 ## Introduction
 
 __SuperNOVAS__ is a supercharged fork of the The Naval Observatory Vector Astrometry Software 
-([NOVAS](https://aa.usno.navy.mil/software/novas_info)). (It is not related to the separate NOVA / libnova library.)
+([NOVAS](https://aa.usno.navy.mil/software/novas_info)). (It is not related to the separate NOVA / `libnova` library.)
 
 The primary goal of __SuperNOVAS__ is to improve on the original NOVAS C library via:
 
@@ -95,11 +97,9 @@ same results with similar lines of code on
 with __SuperNOVAS__ as with __astropy__, notwithstanding a little more involved error handling (due to the lack of 
 `try / except` style constructs in C/C++).
  
-__SuperNOVAS__ is maintained by [Attila Kovács](https://www.sigmyne.com/attipaci). 
-
-Outside contributions are very welcome. See
-[how you can contribute](https://sigmyne.github.io/SuperNOVAS/doc/CONTRIBUTING.html) on how you can make __SuperNOVAS__ 
-even better.
+__SuperNOVAS__ was created and is maintained by [Attila Kovács](https://www.sigmyne.com/attipaci). Outside contributions 
+are very welcome. See [how you can contribute](https://sigmyne.github.io/SuperNOVAS/doc/CONTRIBUTING.html) to make 
+__SuperNOVAS__ even better.
 
 ### Related links
 
@@ -110,9 +110,13 @@ even better.
    from JPL.
  - [Sigmyne/cspice-sharedlib](https://github.com/Sigmyne/cspice-sharedlib) for building CSPICE as a shared
    library for dynamic linking.
+ - [Standard SPICE kernels](https://naif.jpl.nasa.gov/naif/data.html) containing ephemeris data for planets and
+   their moons, major steroids, comets, and space missions.
+ - [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) system provides custom ephemeris data for all types of 
+   Solar-system bodies as per request.
  - [IAU Minor Planet Center](https://www.minorplanetcenter.net/iau/mpc.html) provides up-to-date orbital elements
    for asteroids, comets, and near-Earth objects (NEOs), including newly discovered objects.
- - [IERS Earth Rotation and Reference Systems Service](https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop)
+ - [Earth Rotation and Reference Systems Service (IERS)](https://www.iers.org/IERS/EN/DataProducts/EarthOrientationData/eop)
    provides Earth Orientation Parameter (EOP) data for many high accuracy calculations.
 
 
@@ -223,14 +227,12 @@ accommodate JPL NAIF codes, for which 16-bit storage is insufficient.
 <a name="dependencies"></a>
 ### Dependencies
 
-Optional dependencies:
-
  - [`curl`](https://curl.se/) -- (recommended) for fetching Earth Orientation data from IERS or from elsewhere.
  - [`calceph`](https://calceph.imcce.fr/docs/latest/html/c/) -- (recommended) for using CALCEPH as the Solar-system 
    ephemeris provider.
- - [`cspice`](https://naif.jpl.nasa.gov/naif/toolkit.html) -- for usign the NAIF CSPICE Toolkit as the Solar-system 
+ - [`cspice`](https://naif.jpl.nasa.gov/naif/toolkit.html) -- (optional) for usign the NAIF CSPICE Toolkit as the Solar-system 
    ephemeris provider.
- - [`doxygen`](https://www.doxygen.nl/) -- for compiling HTML documentation.
+ - [`doxygen`](https://www.doxygen.nl/) -- (optional) for compiling HTML documentation.
  
 #### Installing dependencies on Linux
 
@@ -633,10 +635,10 @@ Or include in your Nix build of other software with
 | __Figure 1.__ SuperNOVAS Coordinate Systems and Conversions. Functions indicated in bold face are available in NOVAS C also. All other functions are available in SuperNOVAS only. SuperNOVAS also adds efficient [matrix transformations](https://github.com/Sigmyne/SuperNOVAS/blob/main/doc/USAGE-C99.md#transforms-c99) between the equatorial systems. |
 
 
-The IAU 2000 and 2006 resolutions have completely overhauled the system of astronomical coordinate transformations
-to enable higher precision astrometry. (Super)NOVAS supports coordinate calculations both in the old (pre IAU 2000) 
-ways, and in the new IAU standard method. The table below provides an overview of how the old and new methods define 
-some of the terms differently:
+The [IAU 2000 and 2006 resolutions](https://www.iau.org/IAU/Iau/Publications/List-of-Resolutions.aspx) have completely 
+overhauled the system of astronomical coordinate transformations to enable higher precision astrometry. (Super)NOVAS 
+supports coordinate calculations both in the old (pre IAU 2000) ways, and in the new IAU standard method. The table 
+below provides an overview of how the old and new methods define some of the terms differently:
 
 
  | Concept                    | Old standard                  | New IAU standard                                  |
